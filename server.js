@@ -5,5 +5,5 @@ const app = express()
 app.listen(3000)
 
 app.get('/', (req, res) => {
-    res.sendFile('addon.js', { root: __dirname })
+    res.sendFile('test-addon.js', { root: __dirname })
 })
