@@ -1,4 +1,4 @@
-export default class Constants {
+class Constants {
     static addonUrl = 'https://raw.githubusercontent.com/B1AL1/async-addons-panel/main/'
     static addons = {
         'autoheal-fixed': {
