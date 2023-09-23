@@ -22,6 +22,7 @@
             }
         }
     }
+
     initRojvAddonPanelButton()
 
     const createRojvAddonPanelButton = () => {
