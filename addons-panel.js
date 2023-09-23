@@ -24,7 +24,7 @@
     }
     initRojvAddonPanelButton()
 
-    const createRojvAddonPanelButton = () => {
+    function createRojvAddonPanelButton() {
         if (!$('.rojv-addons-panel-selction').length) {
             let settings = $('.settings-window .hero-options-config .scroll-pane')
             let rojvAddonPanel = document.createElement('div')
