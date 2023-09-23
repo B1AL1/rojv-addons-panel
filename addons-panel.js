@@ -490,7 +490,7 @@
                     return ret
                 }
             } else {
-                setTimeout(() => start(), 50)
+                setTimeout(() => initRojvAddonPanelButton(), 50)
             }
         }
     }
