@@ -15,7 +15,7 @@
             padding: 10px;
             font-family: Arial, Helvetica, sans-serif;
             text-shadow: 0 0 5px #000, 0 0 5px #000, 0 0 5px #000, 0 0 5px #000;
-            background-color: rgba(85, 12, 12, 0.8);
+            background-color: rgba(85, 12, 12, 0.5);
             transform: translate(-50%, -50%);
         }
 
