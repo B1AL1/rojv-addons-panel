@@ -27,7 +27,7 @@
                             alert.children[0].children[2].children[1].remove()
                             let newButton = document.createElement('button')
                             newButton.id = 'cll-confirm'
-                            newButton.innerText = 'Potwierdź chęć bicia2'
+                            newButton.innerText = 'Potwierdź chęć bicia (ide)'
                             newButton.addEventListener('click', () => {
                                 sendMessageOnPrivateChat('ide', nick)
                                 alert.remove()
