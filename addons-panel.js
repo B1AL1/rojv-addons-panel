@@ -2,12 +2,6 @@
 
     const style = document.createElement('style')
     style.innerHTML = `
-        body {
-            background-color: #857e8b;
-            margin: 0;
-            padding: 0;
-        }
-
         .rojvAddonMenu,
         .rojvAddonMenuSettings {
             width: 450px;
@@ -16,6 +10,7 @@
             position: absolute;
             border-radius: 10px;
             border: 1px solid #fff;
+            z-index: 300;
             color: #fff;
             padding: 10px;
             font-family: Arial, Helvetica, sans-serif;
