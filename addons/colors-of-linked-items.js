@@ -1,20 +1,22 @@
 (function () {
+    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
+    let addonName = 'colors-of-linked-items'
     const style = document.createElement('style')
     style.innerHTML = `
         .linked-chat-item-rarity-common {
-            color: #9da1a7 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['common-item'].value} !important;
         }
         .linked-chat-item-rarity-unique {
-            color: #fffb00 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['unique-item'].value} !important;
         }
         .linked-chat-item-rarity-heroic {
-            color: #38b8eb !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['heroic-item'].value} !important;
         }
         .linked-chat-item-rarity-upgraded {
-            color: #ff59af !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['upgraded-item'].value} !important;
         }
         .linked-chat-item-rarity-legendary {
-            color: #ff8400 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['legendary-item'].value} !important;
         }
     `
     document.head.appendChild(style)
@@ -22,7 +24,7 @@
     function colorNick() {
         $('.new-chat-message .message-part .message-section .mark-message-span').each((i, e) => {
             if ($(e).text() == Engine.hero.d.nick) {
-                $(e).css('color', 'orange')
+                $(e).css('color', rojvAddonMenuLocalStorage.addons[addonName].settings['nick'].value)
             }
         })
     }
@@ -30,11 +32,11 @@
     function colorDivisionOfLoot() {
         $('.new-chat-message .message-part.special-style-4 .mark-message-span').each((i, e) => {
             if ($(e).text() == Engine.hero.d.nick) {
-                $(e).css('color', 'orange')
+                $(e).css('color', rojvAddonMenuLocalStorage.addons[addonName].settings['nick'].value)
             }
         })
         $('.new-chat-message .message-part.special-style-4').each((i, e) => {
-            $(e).css('color', '#cfc')
+            $(e).css('color', rojvAddonMenuLocalStorage.addons[addonName].settings['division-of-loot'].value)
         })
     }
 

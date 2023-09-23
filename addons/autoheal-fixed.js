@@ -1,13 +1,16 @@
 // Ustawienia
 // Te ustawienia można edytować według własnych potrzeb
-let settingsNotUsePointHP = false // Ustaw na 'true' żeby nie używać zwykłych potek
-let settingsNotUseFullHP = false // Ustaw na 'true' żeby nie używać potek z pełnym leczeniem
-let settingsNotUsePercentHP = false // Ustaw na 'true' żeby nie używać potek z procentowym leczeniem
-let settingsShowHP = true // Ustaw na 'false' żeby nie wyświetlał na dole ekranu ilości puntków życia oraz pozostałego leczenia
-let minimumHeal = 599 // Ustaw minimalną wartość od której skrypt będzie leczył (Przykład: 100 - pomija potki z leczeniem mniejszym niż 100 na przykład rośliny potrzebne do questów)
-let minimumLifeToHealPercent = 30 // Ustaw minimalną procentową wartość przy której skrypt zacznie działać, 80 - ulecz jak mam mniej niż 80% zdrowia, 50 - ulecz jak mam mniej niż 50% zdrowia itd.
-let excludedItems = ["Sok z Gumijagód", "Wytrawny chrabąszcz"] // Tu możesz wpisać nazwy przdmiotów których nie chcesz używać
+let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
+let addonName = 'autoheal-fixed'
+let settingsNotUsePointHP = rojvAddonMenuLocalStorage.addons[addonName].settings['not-use-point-hp'].value // Ustaw na 'true' żeby nie używać zwykłych potek
+let settingsNotUseFullHP = rojvAddonMenuLocalStorage.addons[addonName].settings['not-use-full-hp'].value // Ustaw na 'true' żeby nie używać potek z pełnym leczeniem
+let settingsNotUsePercentHP = rojvAddonMenuLocalStorage.addons[addonName].settings['not-use-percent-hp'].value // Ustaw na 'true' żeby nie używać potek z procentowym leczeniem
+let settingsShowHP = rojvAddonMenuLocalStorage.addons[addonName].settings['show-hp'].value // Ustaw na 'false' żeby nie wyświetlał na dole ekranu ilości puntków życia oraz pozostałego leczenia
+let minimumHeal = rojvAddonMenuLocalStorage.addons[addonName].settings['minimum-heal'].value // Ustaw minimalną wartość od której skrypt będzie leczył (Przykład: 100 - pomija potki z leczeniem mniejszym niż 100 na przykład rośliny potrzebne do questów)
+let minimumLifeToHealPercent = rojvAddonMenuLocalStorage.addons[addonName].settings['minimum-life-to-heal-percent'].value // Ustaw minimalną procentową wartość przy której skrypt zacznie działać, 80 - ulecz jak mam mniej niż 80% zdrowia, 50 - ulecz jak mam mniej niż 50% zdrowia itd.
+let excludedItems = rojvAddonMenuLocalStorage.addons[addonName].settings['excluded-items'].value // Tu możesz wpisać nazwy przdmiotów których nie chcesz używać
 //----------------------- KONIEC USTAWIEŃ -----------------------------------------
+
 
 let labelHP = null
 //let labelHPDmg = null;
@@ -23,6 +26,24 @@ async function init() {
 
     while (typeof Engine.hero.d.warrior_stats === 'undefined')
         await waitForSeconds(0.1)
+
+    const _oldOnH = Engine.communication.dispatcher.on_h
+    Engine.communication.dispatcher.on_h = function (data) {
+        if (data.hp || data.warrior_stats) {
+            Engine.hero.d.hp = data.hp || data.warrior_stats.hp
+            if (Engine.hero.d.warrior_stats) {
+                Engine.hero.d.warrior_stats.hp = data.hp || data.warrior_stats.hp
+            }
+
+        }
+        if (data.maxhp || data.warrior_stats) {
+            Engine.hero.d.maxhp = data.maxhp || data.warrior_stats.maxhp
+            if (Engine.hero.d.warrior_stats) {
+                Engine.hero.d.warrior_stats.maxhp = data.maxhp || data.warrior_stats.maxhp
+            }
+        }
+        return _oldOnH.apply(this, arguments)
+    }
 
     window.API.addCallbackToEvent("close_battle", initAutoHeal)
 
@@ -189,7 +210,7 @@ function createLabel(id, text, width, top, position, color, textAlign, pointerEv
 }
 
 function updateHPLabel() {
-    var targetNum = Engine.hero.d.hp
+    var targetNum = Engine.hero.d.warrior_stats.hp
     var currentNum = parseInt(labelHP.innerText.replace(/[^\d]+/g, ''))
     var range = targetNum - currentNum
     var step = range / 50
@@ -218,7 +239,7 @@ function updateHealLeftLabel() {
             clearInterval(timer)
             if (targetNum == 0)
                 labelHPHealLeft.style.color = 'red'
-            else if (targetNum < Engine.hero.d.maxhp * 2)
+            else if (targetNum < Engine.hero.d.warrior_stats.maxhp * 2)
                 labelHPHealLeft.style.color = 'orange'
             else
                 labelHPHealLeft.style.color = 'white'
@@ -231,14 +252,14 @@ function updateHealLeftLabel() {
 
 async function showDamageGot(dmgTaken) {
     if (dmgTaken != 0) {
-        var maxHP = Engine.hero.d.maxhp
+        var maxHP = Engine.hero.d.warrior_stats.maxhp
 
         var percentLost = ((dmgTaken / maxHP) * 100).toFixed(1)
 
         const hue = (1 - percentLost / 100) * 60
         const color = `hsl(${hue}, 100%, 50%)`
 
-        labelHPDmg = createLabel("autoheal-dmg-label", Engine.hero.d.hp + " HP", "100%", "-42px", "absolute", "bold", "center", "none", "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black", "0", "opacity 0.5s ease-in-out")
+        labelHPDmg = createLabel("autoheal-dmg-label", Engine.hero.d.warrior_stats.hp + " HP", "100%", "-42px", "absolute", "bold", "center", "none", "-1px 0 black, 0 1px black, 1px 0 black, 0 -1px black", "0", "opacity 0.5s ease-in-out")
         document.querySelector(".glass").parentElement.parentElement.append(labelHPDmg)
         labelHPDmg.innerText = `-${percentLost}%`
         labelHPDmg.style.color = color
@@ -250,8 +271,8 @@ async function showDamageGot(dmgTaken) {
 async function initAutoHeal() {
     console.log('AutoHeal aktywowany')
 
-    var currentHP = Engine.hero.d.hp
-    var maxHP = Engine.hero.d.maxhp
+    var currentHP = Engine.hero.d.warrior_stats.hp
+    var maxHP = Engine.hero.d.warrior_stats.maxhp
     var remainingHP = maxHP - currentHP
     var propRemaining = remainingHP - lastRemainingHP
 
@@ -276,8 +297,8 @@ async function autoHeal() {
     console.log("Zaczynam leczenie...")
 
     // Pobierz dane o punktach życia postaci
-    var currentHP = Engine.hero.d.hp
-    var maxHP = Engine.hero.d.maxhp
+    var currentHP = Engine.hero.d.warrior_stats.hp
+    var maxHP = Engine.hero.d.warrior_stats.maxhp
 
     if (settingsShowHP)
         calculateHpLeftToHeal()
@@ -313,7 +334,7 @@ async function autoHeal() {
             window._g(`moveitem&st=1&id=${healPercent[i].id}`)
             await waitForSeconds(0.25)
             // Pobierz dane o punktach życia postaci
-            currentHP = Engine.hero.d.hp
+            currentHP = Engine.hero.d.warrior_stats.hp
 
             if (currentHP <= maxHP || !Engine.dead) {
                 console.log("Życie nie jest pełne, kontynuuje leczenie")
@@ -335,7 +356,7 @@ async function autoHeal() {
             await waitForSeconds(0.25)
 
             // Pobierz dane o punktach życia postaci
-            currentHP = Engine.hero.d.hp
+            currentHP = Engine.hero.d.warrior_stats.hp
 
             if (currentHP <= maxHP || !Engine.dead) {
                 console.log("Życie nie jest pełne, kontynuuje leczenie")
@@ -354,7 +375,7 @@ async function autoHeal() {
         await waitForSeconds(0.25)
 
         // Pobierz dane o punktach życia postaci
-        currentHP = Engine.hero.d.hp
+        currentHP = Engine.hero.d.warrior_stats.hp
 
         if (currentHP <= maxHP || !Engine.dead) {
             console.log("Życie nie jest pełne, kontynuuje leczenie")

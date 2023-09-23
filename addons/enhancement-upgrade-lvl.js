@@ -1,4 +1,6 @@
 (function () {
+    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
+    let addonName = 'enhancement-upgrade-lvl'
     const style = document.createElement('style')
     style.innerHTML = `
         [enhancement-upgrade-lvl] {
@@ -8,19 +10,19 @@
             font-size: 10px;
         }
         [enhancement-upgrade-lvl="1"] {
-            color: #9da1a7 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['enhancement-upgrade-lvl-1'].value} !important;
         }
         [enhancement-upgrade-lvl="2"] {
-            color: #fffb00 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['enhancement-upgrade-lvl-2'].value} !important;
         }
         [enhancement-upgrade-lvl="3"] {
-            color: #38b8eb !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['enhancement-upgrade-lvl-3'].value} !important;
         }
         [enhancement-upgrade-lvl="4"] {
-            color: #ff59af !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['enhancement-upgrade-lvl-4'].value} !important;
         }
         [enhancement-upgrade-lvl="5"] {
-            color: #ff8400 !important;
+            color: ${rojvAddonMenuLocalStorage.addons[addonName].settings['enhancement-upgrade-lvl-5'].value} !important;
         }
         [enhancement-upgrade-lvl]>p {
             text-shadow: black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px;

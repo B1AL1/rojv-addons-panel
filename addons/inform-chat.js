@@ -164,14 +164,8 @@
     function start() {
         if (interface == 'new') {
             if (Engine && Engine.npcs && Engine.npcs.check && Engine.allInit) {
-                API.addCallbackToEvent('newNpc', function (npc) {
-                    if (npc.d.wt > 79) {
-                        Object.assign(spottedNpc, { details: npc.d })
-                        if (Math.sqrt(Math.pow(hero.details.x - spottedNpc.details.x, 2) + Math.pow(hero.details.y - spottedNpc.details.y, 2)) < 12) {
-                            informChatQueue(hero.details, spottedNpc.details)
-                        }
-                    }
-                })
+                API.addCallbackToEvent('newNpc', npcSpotted)
+                API.addCallbackToEvent('removeNpc', npcRemoved)
             } else {
                 setTimeout(() => start(), 50)
             }
@@ -188,6 +182,21 @@
                     }
                 }
             }
+        }
+    }
+
+    function npcSpotted(npc) {
+        if (npc.d.wt > 79) {
+            Object.assign(spottedNpc, { details: npc.d })
+            if (Math.sqrt(Math.pow(hero.details.x - spottedNpc.details.x, 2) + Math.pow(hero.details.y - spottedNpc.details.y, 2)) < 12) {
+                informChatQueue(hero.details, spottedNpc.details)
+            }
+        }
+    }
+
+    function npcRemoved(npc) {
+        if (npc.d.wt > 79) {
+            Object.assign(spottedNpc, { details: null })
         }
     }
 
