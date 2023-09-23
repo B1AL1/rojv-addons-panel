@@ -362,8 +362,8 @@
                 active: false
             },
             'groove-heros-fix': {
-                name: 'Inform Chat',
-                description: 'Inform Chat',
+                name: 'Groove Heros Fix',
+                description: 'Groove Heros Fix',
                 url: 'https://raw.githubusercontent.com/B1AL1/rojv-addons-panel/main/addons/groove-heros-fix.js',
                 interface: 'new',
                 settings: false,
