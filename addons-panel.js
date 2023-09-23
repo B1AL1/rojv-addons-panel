@@ -8,6 +8,42 @@
         }
     })()
 
+    const initRojvAddonPanelButton = () => {
+        if (interface == 'new') {
+            if (Engine && Engine.allInit) {
+                const _oldToggle = Engine.settings.toggle
+                Engine.settings.toggle = function () {
+                    const ret = _oldToggle.apply(this, arguments)
+                    createRojvAddonPanelButton()
+                    return ret
+                }
+            } else {
+                setTimeout(() => initRojvAddonPanelButton(), 50)
+            }
+        }
+    }
+    initRojvAddonPanelButton()
+
+    const createRojvAddonPanelButton = () => {
+        if (!$('.rojv-addons-panel-selction').length) {
+            let settings = $('.settings-window .hero-options-config .scroll-pane')
+            let rojvAddonPanel = document.createElement('div')
+            rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
+
+            let header = document.createElement('h2')
+            header.classList.add('settings-addons')
+            header.innerHTML = '<span>Rojv Addons Panel</span>'
+            rojvAddonPanel.appendChild(header)
+
+            let list = document.createElement('ul')
+            list.classList.add('hero-options')
+            list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
+            list.addEventListener('click', () => toggleRojvAddonMenu())
+            rojvAddonPanel.appendChild(list)
+            $(settings).append(rojvAddonPanel)
+        }
+    }
+
     const defaultConfig = {
         addons: {
             'autoheal-fixed': {
@@ -478,41 +514,5 @@
         rojvAddonMenuSettings.appendChild(rojvAddonMenuSettings__refresh)
 
         document.body.appendChild(rojvAddonMenuSettings)
-    }
-
-    const initRojvAddonPanelButton = () => {
-        if (interface == 'new') {
-            if (Engine && Engine.allInit) {
-                const _oldToggle = Engine.settings.toggle
-                Engine.settings.toggle = function () {
-                    const ret = _oldToggle.apply(this, arguments)
-                    createRojvAddonPanelButton()
-                    return ret
-                }
-            } else {
-                setTimeout(() => initRojvAddonPanelButton(), 50)
-            }
-        }
-    }
-    initRojvAddonPanelButton()
-
-    const createRojvAddonPanelButton = () => {
-        if (!$('.rojv-addons-panel-selction').length) {
-            let settings = $('.settings-window .hero-options-config .scroll-pane')
-            let rojvAddonPanel = document.createElement('div')
-            rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
-
-            let header = document.createElement('h2')
-            header.classList.add('settings-addons')
-            header.innerHTML = '<span>Rojv Addons Panel</span>'
-            rojvAddonPanel.appendChild(header)
-
-            let list = document.createElement('ul')
-            list.classList.add('hero-options')
-            list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
-            list.addEventListener('click', () => toggleRojvAddonMenu())
-            rojvAddonPanel.appendChild(list)
-            $(settings).append(rojvAddonPanel)
-        }
     }
 })()
