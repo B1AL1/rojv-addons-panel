@@ -63,7 +63,7 @@
                     })
                 Engine.changePlayer.prepareList(charList)
                 Engine.changePlayer.createWorldList()
-                await Engine.changePlayer.createCharacters()
+                Engine.changePlayer.createCharacters()
                 Engine.changePlayer.selectCurrentWorld()
                 Engine.changePlayer.updateScroll()
             }
