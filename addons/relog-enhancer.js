@@ -149,6 +149,7 @@
                         mode: "cors"
                     })
                         .then(async charList => {
+                            console.log(charList)
                             "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : await this.onSuccess(charList)
                         })
                 } catch (error) {
