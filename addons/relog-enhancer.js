@@ -144,7 +144,10 @@
                 const URL = Engine.worldConfig.getApiDomain() + "/account/charlist?hs3=" + cookieH3
                 this.clearError()
                 try {
-                    await fetch(URL)
+                    await fetch(URL, {
+                        credentials: "include",
+                        mode: "cors"
+                    })
                         .then(async charList => {
                             "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : await this.onSuccess(charList)
                         })
