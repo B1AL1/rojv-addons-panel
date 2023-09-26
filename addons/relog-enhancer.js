@@ -28,7 +28,7 @@
 
 
     function start() {
-        if (Engine && Engine.changePlayer && Engine.hero.d && Engine.allInit) {
+        if (Engine && Engine.changePlayer && Engine.hero.d) {
             const accountId = Engine.hero.d.account
 
             Engine.changePlayer.onSuccess = async (listOfCharacters) => {
