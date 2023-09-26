@@ -139,6 +139,37 @@
                     }).then(relog)
                 } else relog()
             }
+            Engine.changePlayer.onError = async () => {
+                const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+                let charList = []
+                await Engine.crossStorage.storage
+                    .onConnect()
+                    .then(() => Engine.crossStorage.get('charlist'))
+                    .then((accountIds) => {
+                        accountIds = JSON.parse(accountIds)
+                        if (accountIds != null) {
+                            for (const [key, value] of Object.entries(accountIds)) {
+                                charList = [...charList, ...value]
+                            }
+                            if (accountIds[accountId] != null) {
+                                if (!deepEqual(accountIds[accountId], margonemLocalStorage.charlist[accountId])) {
+                                    accountIds[accountId] = margonemLocalStorage.charlist[accountId]
+                                    Engine.crossStorage.set('charlist', accountIds)
+                                }
+                            } else {
+                                accountIds[accountId] = margonemLocalStorage.charlist[accountId]
+                                Engine.crossStorage.set('charlist', accountIds)
+                            }
+
+                        } else {
+                            for (const [key, value] of Object.entries(margonemLocalStorage.charlist)) {
+                                charList = [...charList, ...value]
+                            }
+                            Engine.crossStorage.set('charlist', margonemLocalStorage.charlist)
+                        }
+                    })
+                charList.length ? Engine.changePlayer.onSuccess(charList) : this.setErrorLabel()
+            }
         } else {
             setTimeout(() => start(), 50)
         }
