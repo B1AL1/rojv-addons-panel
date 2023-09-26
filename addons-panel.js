@@ -1,4 +1,4 @@
-(function () {
+(async function () {
 
     const style = document.createElement('style')
     style.innerHTML = `
@@ -435,7 +435,7 @@
         }
     }
 
-    loadAddon(rojvAddonMenuLocalStorage.addons)
+    await loadAddon(rojvAddonMenuLocalStorage.addons)
 
     const onDrag = (event) => {
         let element = event.target.offsetParent
