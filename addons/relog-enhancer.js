@@ -31,6 +31,23 @@
         if (Engine && Engine.changePlayer && Engine.hero.d) {
             const accountId = Engine.hero.d.account
 
+            Engine.changePlayer.call = async () => {
+                const cookieH3 = getCookie("hs3")
+                const URL = Engine.worldConfig.getApiDomain() + "/account/charlist?hs3=" + cookieH3
+                this.clearError()
+                try {
+                    await fetch(URL, {
+                        credentials: "include"
+                    })
+                        .then(charList => {
+                            console.log(charList)
+                            "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : Engine.changePlayer.onSuccess(charList)
+                        })
+                } catch (error) {
+                    this.onError()
+                }
+            }
+
             Engine.changePlayer.onSuccess = async (listOfCharacters) => {
                 API.Storage.set("charlist/" + accountId, listOfCharacters)
                 const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
@@ -138,22 +155,6 @@
                         credentials: 'include',
                     }).then(relog)
                 } else relog()
-            }
-            Engine.changePlayer.call = async () => {
-                const cookieH3 = getCookie("hs3")
-                const URL = Engine.worldConfig.getApiDomain() + "/account/charlist?hs3=" + cookieH3
-                this.clearError()
-                try {
-                    await fetch(URL, {
-                        credentials: "include"
-                    })
-                        .then(charList => {
-                            console.log(charList)
-                            "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : this.onSuccess(charList)
-                        })
-                } catch (error) {
-                    this.onError()
-                }
             }
         } else {
             setTimeout(() => start(), 50)
