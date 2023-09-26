@@ -143,21 +143,14 @@
                 const cookieH3 = getCookie("hs3")
                 const URL = Engine.worldConfig.getApiDomain() + "/account/charlist?hs3=" + cookieH3
                 this.clearError()
-                await $.ajax({
-                    url: URL,
-                    xhrFields: {
-                        withCredentials: !0
-                    },
-                    async: true,
-                    crossDomain: !0,
-                    success: charList => {
-                        "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : this.onSuccess(charList)
-                    }
-                    ,
-                    error: () => {
-                        this.onError()
-                    }
-                })
+                try {
+                    await fetch(URL)
+                        .then(async charList => {
+                            "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : await this.onSuccess(charList)
+                        })
+                } catch (error) {
+                    this.onError()
+                }
             }
         } else {
             setTimeout(() => start(), 50)
