@@ -145,12 +145,11 @@
                 this.clearError()
                 try {
                     await fetch(URL, {
-                        credentials: "include",
-                        mode: "cors"
+                        credentials: "include"
                     })
-                        .then(async charList => {
+                        .then(charList => {
                             console.log(charList)
-                            "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : await this.onSuccess(charList)
+                            "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : this.onSuccess(charList)
                         })
                 } catch (error) {
                     this.onError()
