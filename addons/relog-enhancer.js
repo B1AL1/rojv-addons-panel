@@ -63,7 +63,7 @@
                     })
                 Engine.changePlayer.prepareList(charList)
                 Engine.changePlayer.createWorldList()
-                Engine.changePlayer.createCharacters()
+                await Engine.changePlayer.createCharacters()
                 Engine.changePlayer.selectCurrentWorld()
                 Engine.changePlayer.updateScroll()
             }
@@ -139,36 +139,25 @@
                     }).then(relog)
                 } else relog()
             }
-            Engine.changePlayer.onError = async () => {
-                const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
-                let charList = []
-                await Engine.crossStorage.storage
-                    .onConnect()
-                    .then(() => Engine.crossStorage.get('charlist'))
-                    .then((accountIds) => {
-                        accountIds = JSON.parse(accountIds)
-                        if (accountIds != null) {
-                            for (const [key, value] of Object.entries(accountIds)) {
-                                charList = [...charList, ...value]
-                            }
-                            if (accountIds[accountId] != null) {
-                                if (!deepEqual(accountIds[accountId], margonemLocalStorage.charlist[accountId])) {
-                                    accountIds[accountId] = margonemLocalStorage.charlist[accountId]
-                                    Engine.crossStorage.set('charlist', accountIds)
-                                }
-                            } else {
-                                accountIds[accountId] = margonemLocalStorage.charlist[accountId]
-                                Engine.crossStorage.set('charlist', accountIds)
-                            }
-
-                        } else {
-                            for (const [key, value] of Object.entries(margonemLocalStorage.charlist)) {
-                                charList = [...charList, ...value]
-                            }
-                            Engine.crossStorage.set('charlist', margonemLocalStorage.charlist)
-                        }
-                    })
-                charList.length ? Engine.changePlayer.onSuccess(charList) : this.setErrorLabel()
+            Engine.changePlayer.call = async () => {
+                const cookieH3 = getCookie("hs3")
+                const URL = Engine.worldConfig.getApiDomain() + "/account/charlist?hs3=" + cookieH3
+                this.clearError()
+                await $.ajax({
+                    url: URL,
+                    xhrFields: {
+                        withCredentials: !0
+                    },
+                    async: true,
+                    crossDomain: !0,
+                    success: charList => {
+                        "object" == typeof charList && charList.error || "no cookies" === charList || 0 === charList.length ? this.onError() : this.onSuccess(charList)
+                    }
+                    ,
+                    error: () => {
+                        this.onError()
+                    }
+                })
             }
         } else {
             setTimeout(() => start(), 50)
