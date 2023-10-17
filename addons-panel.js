@@ -419,23 +419,57 @@
         localStorage.setItem('rojvAddonMenu', JSON.stringify(rojvAddonMenuLocalStorage))
     }
 
-    const loadAddon = async (addons) => {
-        for (let addon in addons) {
-            if (addons[addon].active && addons[addon].interface.includes(interface)) {
-                await fetch(addons[addon].url)
-                    .then(res => res.blob())
-                    .then(blob => {
-                        var objectURL = URL.createObjectURL(blob)
-                        var sc = document.createElement("script")
-                        sc.setAttribute("src", objectURL)
-                        sc.setAttribute("type", "text/javascript")
-                        document.head.appendChild(sc)
-                    })
-            }
+    // const loadAddon = async (addons) => {
+    //     for (let addon in addons) {
+    //         if (addons[addon].active && addons[addon].interface.includes(interface)) {
+    //             await fetch(addons[addon].url)
+    //                 .then(res => res.blob())
+    //                 .then(blob => {
+    //                     var objectURL = URL.createObjectURL(blob)
+    //                     var sc = document.createElement("script")
+    //                     sc.setAttribute("src", objectURL)
+    //                     sc.setAttribute("type", "text/javascript")
+    //                     document.head.appendChild(sc)
+    //                 })
+    //         }
+    //     }
+    // }
+
+    // await loadAddon(rojvAddonMenuLocalStorage.addons)
+
+    async function cirosantilli_load_scripts(script_urls) {
+        function load(script_url) {
+            return new Promise(function (resolve, reject) {
+                if (cirosantilli_load_scripts.loaded.has(script_url)) {
+                    resolve()
+                } else {
+                    var script = document.createElement('script')
+                    script.onload = resolve
+                    script.src = script_url
+                    document.head.appendChild(script)
+                }
+            })
+        }
+        var promises = []
+        for (const script_url of script_urls) {
+            promises.push(load(script_url))
+        }
+        await Promise.all(promises)
+        for (const script_url of script_urls) {
+            cirosantilli_load_scripts.loaded.add(script_url)
         }
     }
+    cirosantilli_load_scripts.loaded = new Set();
 
-    await loadAddon(rojvAddonMenuLocalStorage.addons)
+    (async () => {
+        let urls = []
+        for (let addon in rojvAddonMenuLocalStorage.addons) {
+            if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
+                urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
+            }
+        }
+        await cirosantilli_load_scripts(urls)
+    })()
 
     const onDrag = (event) => {
         let element = event.target.offsetParent
