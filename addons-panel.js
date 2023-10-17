@@ -443,10 +443,20 @@
                 if (cirosantilli_load_scripts.loaded.has(script_url)) {
                     resolve()
                 } else {
-                    var script = document.createElement('script')
-                    script.onload = resolve
-                    script.src = script_url
-                    document.head.appendChild(script)
+                    fetch(script_url)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            var objectURL = URL.createObjectURL(blob)
+                            var sc = document.createElement("script")
+                            sc.setAttribute("src", objectURL)
+                            sc.setAttribute("type", "text/javascript")
+                            sc.onload = resolve
+                            document.head.appendChild(sc)
+                        })
+                    // var script = document.createElement('script')
+                    // script.onload = resolve
+                    // script.src = script_url
+                    // document.head.appendChild(script)
                 }
             })
         }
