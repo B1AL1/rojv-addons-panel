@@ -1,4 +1,57 @@
 (async function () {
+
+    const interface = (function () {
+        if (typeof API != 'undefined' && typeof Engine != 'undefined' && typeof margoStorage == 'undefined') {
+            return 'new'
+        } else if (typeof dbget == 'undefined' && typeof proceed == 'undefined') {
+            return 'old'
+        }
+    })()
+
+    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
+
+    async function loadScripts(urls) {
+        function load(url) {
+            return new Promise(function (resolve, reject) {
+                if (loadScripts.loaded.has(url)) {
+                    resolve()
+                } else {
+                    fetch(url)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            var objectURL = URL.createObjectURL(blob)
+                            var sc = document.createElement("script")
+                            sc.setAttribute("src", objectURL)
+                            sc.setAttribute("type", "text/javascript")
+                            sc.onload = resolve
+                            document.head.appendChild(sc)
+                        })
+                }
+            })
+        }
+        var promises = []
+        for (const url of urls) {
+            promises.push(load(url))
+        }
+        await Promise.all(promises)
+        for (const url of urls) {
+            loadScripts.loaded.add(url)
+        }
+    }
+    loadScripts.loaded = new Set();
+
+    (async () => {
+        let urls = []
+        if (!!rojvAddonMenuLocalStorage) {
+            for (let addon in rojvAddonMenuLocalStorage.addons) {
+                if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
+                    urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
+                }
+            }
+            await loadScripts(urls)
+        }
+    })()
+
     const defaultConfig = {
         addons: {
             'autoheal-fixed': {
@@ -202,59 +255,10 @@
         version: '1.0.0'
     }
 
-    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
     if (!rojvAddonMenuLocalStorage) {
         rojvAddonMenuLocalStorage = defaultConfig
         localStorage.setItem('rojvAddonMenu', JSON.stringify(rojvAddonMenuLocalStorage))
     }
-
-    async function loadScripts(urls) {
-        function load(url) {
-            return new Promise(function (resolve, reject) {
-                if (loadScripts.loaded.has(url)) {
-                    resolve()
-                } else {
-                    fetch(url)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            var objectURL = URL.createObjectURL(blob)
-                            var sc = document.createElement("script")
-                            sc.setAttribute("src", objectURL)
-                            sc.setAttribute("type", "text/javascript")
-                            sc.onload = resolve
-                            document.head.appendChild(sc)
-                        })
-                }
-            })
-        }
-        var promises = []
-        for (const url of urls) {
-            promises.push(load(url))
-        }
-        await Promise.all(promises)
-        for (const url of urls) {
-            loadScripts.loaded.add(url)
-        }
-    }
-    loadScripts.loaded = new Set();
-
-    (async () => {
-        let urls = []
-        for (let addon in rojvAddonMenuLocalStorage.addons) {
-            if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
-                urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
-            }
-        }
-        await loadScripts(urls)
-    })()
-
-    const interface = (function () {
-        if (typeof API != 'undefined' && typeof Engine != 'undefined' && typeof margoStorage == 'undefined') {
-            return 'new'
-        } else if (typeof dbget == 'undefined' && typeof proceed == 'undefined') {
-            return 'old'
-        }
-    })()
 
     const initRojvAddonPanelButton = () => {
         if (interface == 'new') {
