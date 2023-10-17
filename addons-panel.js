@@ -419,31 +419,13 @@
         localStorage.setItem('rojvAddonMenu', JSON.stringify(rojvAddonMenuLocalStorage))
     }
 
-    // const loadAddon = async (addons) => {
-    //     for (let addon in addons) {
-    //         if (addons[addon].active && addons[addon].interface.includes(interface)) {
-    //             await fetch(addons[addon].url)
-    //                 .then(res => res.blob())
-    //                 .then(blob => {
-    //                     var objectURL = URL.createObjectURL(blob)
-    //                     var sc = document.createElement("script")
-    //                     sc.setAttribute("src", objectURL)
-    //                     sc.setAttribute("type", "text/javascript")
-    //                     document.head.appendChild(sc)
-    //                 })
-    //         }
-    //     }
-    // }
-
-    // await loadAddon(rojvAddonMenuLocalStorage.addons)
-
-    async function cirosantilli_load_scripts(script_urls) {
-        function load(script_url) {
+    async function loadScripts(urls) {
+        function load(url) {
             return new Promise(function (resolve, reject) {
-                if (cirosantilli_load_scripts.loaded.has(script_url)) {
+                if (loadScripts.loaded.has(url)) {
                     resolve()
                 } else {
-                    fetch(script_url)
+                    fetch(url)
                         .then(res => res.blob())
                         .then(blob => {
                             var objectURL = URL.createObjectURL(blob)
@@ -453,23 +435,19 @@
                             sc.onload = resolve
                             document.head.appendChild(sc)
                         })
-                    // var script = document.createElement('script')
-                    // script.onload = resolve
-                    // script.src = script_url
-                    // document.head.appendChild(script)
                 }
             })
         }
         var promises = []
-        for (const script_url of script_urls) {
-            promises.push(load(script_url))
+        for (const url of urls) {
+            promises.push(load(url))
         }
         await Promise.all(promises)
-        for (const script_url of script_urls) {
-            cirosantilli_load_scripts.loaded.add(script_url)
+        for (const url of urls) {
+            loadScripts.loaded.add(url)
         }
     }
-    cirosantilli_load_scripts.loaded = new Set();
+    loadScripts.loaded = new Set();
 
     (async () => {
         let urls = []
@@ -478,7 +456,7 @@
                 urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
             }
         }
-        await cirosantilli_load_scripts(urls)
+        await loadScripts(urls)
     })()
 
     const onDrag = (event) => {
