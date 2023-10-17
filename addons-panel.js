@@ -1,169 +1,48 @@
-(async function () {
-
-    const style = document.createElement('style')
-    style.innerHTML = `
-        .rojvAddonMenu,
-        .rojvAddonMenuSettings {
-            width: 450px;
-            top: 50%;
-            left: 50%;
-            position: absolute;
-            border-radius: 10px;
-            border: 1px solid #fff;
-            z-index: 300;
-            color: #fff;
-            padding: 10px;
-            font-family: Arial, Helvetica, sans-serif;
-            text-shadow: 0 0 5px #000, 0 0 5px #000, 0 0 5px #000, 0 0 5px #000;
-            background-color: rgba(85, 12, 12, 0.5);
-            transform: translate(-50%, -50%);
+(function () {
+    async function loadScripts(urls) {
+        function load(url) {
+            return new Promise(function (resolve, reject) {
+                if (loadScripts.loaded.has(url)) {
+                    resolve()
+                } else {
+                    fetch(url)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            var objectURL = URL.createObjectURL(blob)
+                            var sc = document.createElement("script")
+                            sc.setAttribute("src", objectURL)
+                            sc.setAttribute("type", "text/javascript")
+                            sc.onload = resolve
+                            document.head.appendChild(sc)
+                        })
+                }
+            })
         }
-
-        .rojvAddonMenu__header {
-            font-size: 20px;
-            font-weight: bold;
-            display: flex;
-            cursor: default;
+        var promises = []
+        for (const url of urls) {
+            promises.push(load(url))
         }
-
-        .rojvAddonMenu__refresh,
-        .rojvAddonMenuSettings__refresh {
-            justify-content: center;
-            cursor: pointer;
-            text-align: center;
-            border-radius: 10px;
-            border: 1px solid #fff;
-            width: min-content;
-            padding: 5px 7px;
-            white-space: nowrap;
-            margin: 0 auto;
-            background-color: rgba(85, 12, 12, 0.6);
+        await Promise.all(promises)
+        for (const url of urls) {
+            loadScripts.loaded.add(url)
         }
+    }
 
-        .rojvAddonMenuSettings__informChatCustomButton {
-            cursor: pointer;
-            border-radius: 10px;
-            border: 1px solid #fff;
-            width: min-content;
-            padding: 3px 7px;
-            white-space: nowrap;
-            margin-left: 5px;
-            background-color: rgba(85, 12, 12, 0.6);
-        }
+    loadScripts.loaded = new Set()
 
-        .rojvAddonMenu__refresh:hover,
-        .rojvAddonMenuSettings__refresh:hover,
-        .rojvAddonMenuSettings__informChatCustomButton:hover {
-            text-shadow: 0 0 5px #ff0000, 0 0 5px #ff0000, 0 0 5px #fff, 0 0 5px #fff;
-            background-color: rgba(85, 12, 12, 1);
-        }
+    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
 
-        .rojvAddonMenuSettings__header {
-            font-size: 10px;
-            font-weight: bold;
-            display: flex;
-            cursor: default;
-        }
-
-        .rojvAddonMenu__header.active,
-        .rojvAddonMenuSettings__header.active {
-            cursor: move;
-            user-select: none;
-        }
-
-        .rojvAddonMenu__title,
-        .rojvAddonMenuSettings__title {
-            margin: 0 auto;
-        }
-
-        .rojvAddonMenu__close,
-        .rojvAddonMenuSettings__close {
-            position: absolute;
-            cursor: pointer;
-            right: 10px;
-        }
-
-        .rojvAddonMenu__close:hover,
-        .rojvAddonMenuSettings__close:hover {
-            text-shadow: 0 0 5px #70004b;
-        }
-
-        .rojvAddonMenu__item {
-            list-style-type: none;
-            margin-bottom: 15px;
-        }
-
-        .rojvAddonMenu__label {
-            margin-left: 5px;
-        }
-
-        .rojvAddonMenu__settings {
-            margin-left: 5px;
-            cursor: pointer;
-        }
-
-        .rojvAddonMenu__input[type='number'] {
-            width: 50px;
-        }
-
-        .rojvAddonMenu__settings:hover {
-            text-shadow: 0 0 5px #ff0000, 0 0 5px #ff0000, 0 0 5px #fff, 0 0 5px #fff;
-        }
-
-        .rojvAddonMenu__toggle {
-            position: relative;
-            display: inline-block;
-            width: 30px;
-            height: 17px;
-        }
-
-        .rojvAddonMenu__checkbox {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .rojvAddonMenu__slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            -webkit-transition: 0.4s;
-            transition: 0.4s;
-            border-radius: 17px;
-        }
-
-        .rojvAddonMenu__slider:before {
-            position: absolute;
-            content: '';
-            height: 13px;
-            width: 13px;
-            left: 3px;
-            bottom: 2px;
-            background-color: white;
-            -webkit-transition: 0.4s;
-            transition: 0.4s;
-            border-radius: 50%;
-        }
-
-        .rojvAddonMenu__toggle > input:checked + .rojvAddonMenu__slider {
-            background-color: #70004b;
-        }
-
-        .rojvAddonMenu__toggle > input:focus + .rojvAddonMenu__slider {
-            box-shadow: 0 0 1px #70004b;
-        }
-
-        .rojvAddonMenu__toggle > input:checked + .rojvAddonMenu__slider:before {
-            -webkit-transform: translateX(11px);
-            -ms-transform: translateX(11px);
-            transform: translateX(11px);
-        }
-    `
-    document.head.appendChild(style)
+        (async () => {
+            let urls = []
+            if (rojvAddonMenuLocalStorage) {
+                for (let addon in rojvAddonMenuLocalStorage.addons) {
+                    if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
+                        urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
+                    }
+                }
+                await loadScripts(urls)
+            }
+        })()
 
     const interface = (function () {
         if (typeof API != 'undefined' && typeof Engine != 'undefined' && typeof margoStorage == 'undefined') {
@@ -172,43 +51,6 @@
             return 'old'
         }
     })()
-
-    const initRojvAddonPanelButton = () => {
-        if (interface == 'new') {
-            if (Engine && Engine.allInit) {
-                const _oldToggle = Engine.settings.toggle
-                Engine.settings.toggle = function () {
-                    const ret = _oldToggle.apply(this, arguments)
-                    createRojvAddonPanelButton()
-                    return ret
-                }
-            } else {
-                setTimeout(() => initRojvAddonPanelButton(), 50)
-            }
-        }
-    }
-
-    initRojvAddonPanelButton()
-
-    const createRojvAddonPanelButton = () => {
-        if (!$('.rojv-addons-panel-selction').length) {
-            let settings = $('.settings-window .hero-options-config .scroll-pane')
-            let rojvAddonPanel = document.createElement('div')
-            rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
-
-            let header = document.createElement('h2')
-            header.classList.add('settings-addons')
-            header.innerHTML = '<span>Rojv Addons Panel</span>'
-            rojvAddonPanel.appendChild(header)
-
-            let list = document.createElement('ul')
-            list.classList.add('hero-options')
-            list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
-            list.addEventListener('click', () => toggleRojvAddonMenu())
-            rojvAddonPanel.appendChild(list)
-            $(settings).append(rojvAddonPanel)
-        }
-    }
 
     const defaultConfig = {
         addons: {
@@ -413,51 +255,47 @@
         version: '1.0.0'
     }
 
-    let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
     if (!rojvAddonMenuLocalStorage) {
         rojvAddonMenuLocalStorage = defaultConfig
         localStorage.setItem('rojvAddonMenu', JSON.stringify(rojvAddonMenuLocalStorage))
     }
 
-    async function loadScripts(urls) {
-        function load(url) {
-            return new Promise(function (resolve, reject) {
-                if (loadScripts.loaded.has(url)) {
-                    resolve()
-                } else {
-                    fetch(url)
-                        .then(res => res.blob())
-                        .then(blob => {
-                            var objectURL = URL.createObjectURL(blob)
-                            var sc = document.createElement("script")
-                            sc.setAttribute("src", objectURL)
-                            sc.setAttribute("type", "text/javascript")
-                            sc.onload = resolve
-                            document.head.appendChild(sc)
-                        })
+    const initRojvAddonPanelButton = () => {
+        if (interface == 'new') {
+            if (Engine && Engine.allInit) {
+                const _oldToggle = Engine.settings.toggle
+                Engine.settings.toggle = function () {
+                    const ret = _oldToggle.apply(this, arguments)
+                    createRojvAddonPanelButton()
+                    return ret
                 }
-            })
-        }
-        var promises = []
-        for (const url of urls) {
-            promises.push(load(url))
-        }
-        await Promise.all(promises)
-        for (const url of urls) {
-            loadScripts.loaded.add(url)
-        }
-    }
-    loadScripts.loaded = new Set();
-
-    (async () => {
-        let urls = []
-        for (let addon in rojvAddonMenuLocalStorage.addons) {
-            if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
-                urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
+            } else {
+                setTimeout(() => initRojvAddonPanelButton(), 50)
             }
         }
-        await loadScripts(urls)
-    })()
+    }
+
+    initRojvAddonPanelButton()
+
+    const createRojvAddonPanelButton = () => {
+        if (!$('.rojv-addons-panel-selction').length) {
+            let settings = $('.settings-window .hero-options-config .scroll-pane')
+            let rojvAddonPanel = document.createElement('div')
+            rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
+
+            let header = document.createElement('h2')
+            header.classList.add('settings-addons')
+            header.innerHTML = '<span>Rojv Addons Panel</span>'
+            rojvAddonPanel.appendChild(header)
+
+            let list = document.createElement('ul')
+            list.classList.add('hero-options')
+            list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
+            list.addEventListener('click', () => toggleRojvAddonMenu())
+            rojvAddonPanel.appendChild(list)
+            $(settings).append(rojvAddonPanel)
+        }
+    }
 
     const onDrag = (event) => {
         let element = event.target.offsetParent
@@ -703,4 +541,169 @@
 
         document.body.appendChild(rojvAddonMenuSettings)
     }
+
+    const style = document.createElement('style')
+    style.innerHTML = `
+        .rojvAddonMenu,
+        .rojvAddonMenuSettings {
+            width: 450px;
+            top: 50%;
+            left: 50%;
+            position: absolute;
+            border-radius: 10px;
+            border: 1px solid #fff;
+            z-index: 300;
+            color: #fff;
+            padding: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            text-shadow: 0 0 5px #000, 0 0 5px #000, 0 0 5px #000, 0 0 5px #000;
+            background-color: rgba(85, 12, 12, 0.5);
+            transform: translate(-50%, -50%);
+        }
+
+        .rojvAddonMenu__header {
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            cursor: default;
+        }
+
+        .rojvAddonMenu__refresh,
+        .rojvAddonMenuSettings__refresh {
+            justify-content: center;
+            cursor: pointer;
+            text-align: center;
+            border-radius: 10px;
+            border: 1px solid #fff;
+            width: min-content;
+            padding: 5px 7px;
+            white-space: nowrap;
+            margin: 0 auto;
+            background-color: rgba(85, 12, 12, 0.6);
+        }
+
+        .rojvAddonMenuSettings__informChatCustomButton {
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid #fff;
+            width: min-content;
+            padding: 3px 7px;
+            white-space: nowrap;
+            margin-left: 5px;
+            background-color: rgba(85, 12, 12, 0.6);
+        }
+
+        .rojvAddonMenu__refresh:hover,
+        .rojvAddonMenuSettings__refresh:hover,
+        .rojvAddonMenuSettings__informChatCustomButton:hover {
+            text-shadow: 0 0 5px #ff0000, 0 0 5px #ff0000, 0 0 5px #fff, 0 0 5px #fff;
+            background-color: rgba(85, 12, 12, 1);
+        }
+
+        .rojvAddonMenuSettings__header {
+            font-size: 10px;
+            font-weight: bold;
+            display: flex;
+            cursor: default;
+        }
+
+        .rojvAddonMenu__header.active,
+        .rojvAddonMenuSettings__header.active {
+            cursor: move;
+            user-select: none;
+        }
+
+        .rojvAddonMenu__title,
+        .rojvAddonMenuSettings__title {
+            margin: 0 auto;
+        }
+
+        .rojvAddonMenu__close,
+        .rojvAddonMenuSettings__close {
+            position: absolute;
+            cursor: pointer;
+            right: 10px;
+        }
+
+        .rojvAddonMenu__close:hover,
+        .rojvAddonMenuSettings__close:hover {
+            text-shadow: 0 0 5px #70004b;
+        }
+
+        .rojvAddonMenu__item {
+            list-style-type: none;
+            margin-bottom: 15px;
+        }
+
+        .rojvAddonMenu__label {
+            margin-left: 5px;
+        }
+
+        .rojvAddonMenu__settings {
+            margin-left: 5px;
+            cursor: pointer;
+        }
+
+        .rojvAddonMenu__input[type='number'] {
+            width: 50px;
+        }
+
+        .rojvAddonMenu__settings:hover {
+            text-shadow: 0 0 5px #ff0000, 0 0 5px #ff0000, 0 0 5px #fff, 0 0 5px #fff;
+        }
+
+        .rojvAddonMenu__toggle {
+            position: relative;
+            display: inline-block;
+            width: 30px;
+            height: 17px;
+        }
+
+        .rojvAddonMenu__checkbox {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .rojvAddonMenu__slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: 0.4s;
+            transition: 0.4s;
+            border-radius: 17px;
+        }
+
+        .rojvAddonMenu__slider:before {
+            position: absolute;
+            content: '';
+            height: 13px;
+            width: 13px;
+            left: 3px;
+            bottom: 2px;
+            background-color: white;
+            -webkit-transition: 0.4s;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+
+        .rojvAddonMenu__toggle > input:checked + .rojvAddonMenu__slider {
+            background-color: #70004b;
+        }
+
+        .rojvAddonMenu__toggle > input:focus + .rojvAddonMenu__slider {
+            box-shadow: 0 0 1px #70004b;
+        }
+
+        .rojvAddonMenu__toggle > input:checked + .rojvAddonMenu__slider:before {
+            -webkit-transform: translateX(11px);
+            -ms-transform: translateX(11px);
+            transform: translateX(11px);
+        }
+    `
+    document.head.appendChild(style)
 })()
