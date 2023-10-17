@@ -1,4 +1,4 @@
-(async function () {
+(function () {
 
     const interface = (function () {
         if (typeof API != 'undefined' && typeof Engine != 'undefined' && typeof margoStorage == 'undefined') {
