@@ -1,4 +1,4 @@
-(function () {
+(async function () {
 
     let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
     console.log(rojvAddonMenuLocalStorage)
