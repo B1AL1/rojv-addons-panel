@@ -35,7 +35,7 @@
 
     (async () => {
         let urls = []
-        if (rojvAddonMenuLocalStorage) {
+        if (!!rojvAddonMenuLocalStorage) {
             for (let addon in rojvAddonMenuLocalStorage.addons) {
                 if (rojvAddonMenuLocalStorage.addons[addon].active && rojvAddonMenuLocalStorage.addons[addon].interface.includes(interface)) {
                     urls.push(rojvAddonMenuLocalStorage.addons[addon].url)
