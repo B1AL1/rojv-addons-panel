@@ -31,6 +31,7 @@
     loadScripts.loaded = new Set()
 
     let rojvAddonMenuLocalStorage = JSON.parse(localStorage.getItem('rojvAddonMenu'))
+    console.log(rojvAddonMenuLocalStorage)
 
         (async () => {
             let urls = []
