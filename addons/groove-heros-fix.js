@@ -1,18 +1,6 @@
 (function () {
-    const interface = (function () {
-        if (typeof API != 'undefined' && typeof Engine != 'undefined' && typeof margoStorage == 'undefined') {
-            return 'new'
-        } else if (typeof dbget == 'undefined' && typeof proceed == 'undefined') {
-            return 'old'
-        }
-    })()
-
     const sendMessageOnPrivateChat = (message, receiver) => {
-        if (interface == 'new') {
-            _g(`chat&channel=personal&receiver=${receiver}`, !1, { c: message })
-        } else {
-            _g(`chat&channel=personal&receiver=${receiver}`, { c: message })
-        }
+        _g(`chat&channel=personal&receiver=${receiver}`, !1, { c: message })
     }
 
     const callback = (mutationList, observer) => {
