@@ -42,6 +42,12 @@
         }
     }
 
+    const forHero = (hero) => {
+        if (hero) {
+            return hero
+        }
+    }
+
     const parseItemStats = (item) => {
         if (typeof item.stat === 'string') {
             item.parsedStats = item.stat.split(';').reduce((acc, curr) => {
@@ -1276,9 +1282,10 @@
     const loadRelogEnhancer = (async () => {
 
         await waitFor(() => forChangePlayer(Engine.changePlayer), 50, 100)
+        await waitFor(() => forHero(Engine.hero.d), 50, 100)
 
         let addonName = 'relog-enhancer'
-        if (!checkAddonAvailability(addonName) || typeof Engine.changePlayer === 'null') return
+        if (!checkAddonAvailability(addonName) || typeof Engine.changePlayer === 'null' || typeof Engine.hero.d === 'null') return
 
         const accountId = Engine.hero.d.account
         const isGuest = (() => {
