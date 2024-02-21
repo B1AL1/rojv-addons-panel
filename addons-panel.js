@@ -1224,8 +1224,14 @@
         }
 
         const npcRemoved = (npc) => {
-            if (npc.d.wt > 79) {
-                spottedNpcs.splice(spottedNpcs.indexOf(npc.d), 1)
+            if (interfaceType == 'new') {
+                if (npc.d.wt > 79) {
+                    spottedNpcs.splice(spottedNpcs.indexOf(npc.d), 1)
+                }
+            } else if (interfaceType == 'old') {
+                if (npc.wt > 79) {
+                    spottedNpcs.splice(spottedNpcs.indexOf(npc), 1)
+                }
             }
         }
 
@@ -1266,7 +1272,7 @@
                     _newNpc(npcs)
                     let npcsList = g.npc
                     for (let npc in npcs) {
-                        if (npcsList[npcs[npc].id] === undefined) {
+                        if (npcsList[npcs[npc].id] === undefined && npcs[npc].wt > 79) {
                             npcRemoved(npcs[npc])
                         }
                     }
