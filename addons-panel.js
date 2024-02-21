@@ -173,7 +173,7 @@
             name: 'Heros Occupation Space',
             description: 'Heros Occupation Space',
             interface: 'new',
-            settings: false
+            settings: true
         }
     }
 
@@ -251,6 +251,14 @@
                 'enhancement-upgrade-lvl-5': {
                     name: 'Poziom ulepszenia Lvl 5',
                     description: 'Poziom ulepszenia Lvl 5',
+                    value: '#ff8400',
+                    type: 'color'
+                }
+            },
+            'heros-occupation-space': {
+                'border-color': {
+                    name: 'Kolor ramki',
+                    description: 'Kolor ramki',
                     value: '#ff8400',
                     type: 'color'
                 }
@@ -1443,8 +1451,7 @@
                 if (!maskMap.has(grp)) maskMap.set(grp, generateMaskImg(grp, width, height))
                 return maskMap.get(grp)
             }
-        }
-        )()
+        })()
 
         class DrawMask {
             constructor(npc) {
@@ -1524,11 +1531,33 @@
         let addonName = 'heros-occupation-space'
         if (!checkAddonAvailability(addonName)) return
 
+        let addonsSettings = { ...defaultConfig.addons[addonName], ...rojvStorage.addons[addonName].settings }
+
         const isCol = (x, y) => Engine.map.col.check(x, y) === 1
-        const img = new Image()
-        img.src = 'https://i.imgur.com/c9dkho1.png'
+        const borderImage = new Image()
+        borderImage.src = 'https://i.imgur.com/c9dkho1.png'
 
         const mapCords = new Map()
+
+        const borderColor = addonsSettings['border-color'].value
+
+        const generateBorderImg = (() => {
+            const canvas = document.createElement('canvas')
+            canvas.width = 32
+            canvas.height = 32
+            const ctx = canvas.getContext('2d')
+            ctx.strokeStyle = borderColor
+            ctx.shadowBlur = 5
+            ctx.lineWidth = 2
+            ctx.strokeRect(2, 2, 28, 28)
+            ctx.drawImage(borderImage, 0, 0, 32, 32)
+
+            return canvas
+        })()
+
+        borderImage.onload = () => {
+            generateBorderImg.getContext('2d').drawImage(borderImage, 0, 0, 32, 32)
+        }
 
         const calcPosition = (a, b, id) => {
             const arr = []
@@ -1675,11 +1704,11 @@
             }
         }
 
-        function heuristic(p1, p2) {
+        const heuristic = (p1, p2) => {
             return Math.abs(p1.x - p2.x) + Math.abs(p1.y - p2.y)
         }
 
-        function getPath(x, y) {
+        const getPath = (x, y) => {
             const hero = Engine.hero.d
             const map = Engine.map.d
 
@@ -1706,11 +1735,9 @@
                     const isHeros = wt >= 79 && wt <= 99
 
                     if (isHeros && mapCords.has(id)) {
-                        ctx.save()
                         mapCords.get(id).forEach((a) => {
-                            ctx.drawImage(img, (a.x * 32) - offsetX, (a.y * 32) - offsetY, 32, 32)
+                            ctx.drawImage(generateBorderImg, (a.x * 32) - offsetX, (a.y * 32) - offsetY, 32, 32)
                         })
-                        ctx.restore()
                     } else if (isHeros) {
                         calcPosition(rx, ry, id)
                     }
