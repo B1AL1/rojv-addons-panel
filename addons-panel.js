@@ -900,6 +900,7 @@
         RojvAPI.emitter.on('item', items => {
             for (let item in items) {
                 parseItemStats(items[item])
+                addItemId(items[item], item)
                 cachedItemsEnchancement.add(items[item])
             }
             addUpgradeLvl(cachedItemsEnchancement)
@@ -984,6 +985,7 @@
         RojvAPI.emitter.on('item', items => {
             for (let item in items) {
                 parseItemStats(items[item])
+                addItemId(items[item], item)
                 cachedItemsLootDivision.add(items[item])
             }
         })
