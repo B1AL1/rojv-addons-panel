@@ -180,46 +180,63 @@
     const defaultConfig = {
         addons: {
             'diverse-colors-on-chat': {
+                'common-item': '#9da1a7',
+                'unique-item': '#fffb00',
+                'heroic-item': '#38b8eb',
+                'upgraded-item': '#ff59af',
+                'legendary-item': '#ff8400',
+                'nick': '#ffa500',
+                'division-of-loot': '#ccffcc'
+            },
+            'enhancement-upgrade-lvl': {
+                'enhancement-upgrade-lvl-1': '#9da1a7',
+                'enhancement-upgrade-lvl-2': '#fffb00',
+                'enhancement-upgrade-lvl-3': '#38b8eb',
+                'enhancement-upgrade-lvl-4': '#ff59af',
+                'enhancement-upgrade-lvl-5': '#ff8400'
+            },
+            'heros-occupation-space': {
+                'border-color': '#ff8400'
+            }
+        }
+    }
+
+    const addonsSettingsList = {
+        addons: {
+            'diverse-colors-on-chat': {
                 'common-item': {
                     name: 'Zwykły przedmiot',
                     description: 'Zwykły przedmiot',
-                    value: '#9da1a7',
                     type: 'color'
                 },
                 'unique-item': {
                     name: 'Unikalny przedmiot',
                     description: 'Unikalny przedmiot',
-                    value: '#fffb00',
                     type: 'color'
                 },
                 'heroic-item': {
                     name: 'Heroiczny przedmiot',
                     description: 'Heroiczny przedmiot',
-                    value: '#38b8eb',
                     type: 'color'
                 },
                 'upgraded-item': {
                     name: 'Ulepszony przedmiot',
                     description: 'Ulepszony przedmiot',
-                    value: '#ff59af',
                     type: 'color'
                 },
                 'legendary-item': {
                     name: 'Legendarny przedmiot',
                     description: 'Legendarny przedmiot',
-                    value: '#ff8400',
                     type: 'color'
                 },
                 'nick': {
                     name: 'Nick',
                     description: 'Nick',
-                    value: '#ffa500',
                     type: 'color'
                 },
                 'division-of-loot': {
                     name: 'Podział łupu',
                     description: 'Podział łupu',
-                    value: '#ccffcc',
                     type: 'color'
                 }
             },
@@ -227,31 +244,26 @@
                 'enhancement-upgrade-lvl-1': {
                     name: 'Poziom ulepszenia Lvl 1',
                     description: 'Poziom ulepszenia Lvl 1',
-                    value: '#9da1a7',
                     type: 'color'
                 },
                 'enhancement-upgrade-lvl-2': {
                     name: 'Poziom ulepszenia Lvl 2',
                     description: 'Poziom ulepszenia Lvl 2',
-                    value: '#fffb00',
                     type: 'color'
                 },
                 'enhancement-upgrade-lvl-3': {
                     name: 'Poziom ulepszenia Lvl 3',
                     description: 'Poziom ulepszenia Lvl 3',
-                    value: '#38b8eb',
                     type: 'color'
                 },
                 'enhancement-upgrade-lvl-4': {
                     name: 'Poziom ulepszenia Lvl 4',
                     description: 'Poziom ulepszenia Lvl 4',
-                    value: '#ff59af',
                     type: 'color'
                 },
                 'enhancement-upgrade-lvl-5': {
                     name: 'Poziom ulepszenia Lvl 5',
                     description: 'Poziom ulepszenia Lvl 5',
-                    value: '#ff8400',
                     type: 'color'
                 }
             },
@@ -259,7 +271,6 @@
                 'border-color': {
                     name: 'Kolor ramki',
                     description: 'Kolor ramki',
-                    value: '#ff8400',
                     type: 'color'
                 }
             }
@@ -333,7 +344,8 @@
                         }
                     })
 
-                    let settings = { ...defaultConfig.addons[addon], ...rojvStorage.addons[addon].settings }
+                    let settings = addonsSettingsList.addons[addon]
+                    let settingsValues = { ...defaultConfig.addons[addon], ...rojvStorage.addons[addon]?.settings }
                     const settingsList = document.createElement('ul')
                     settingsList.className = 'rojv-addon-settings__list'
                     for (let setting in settings) {
@@ -344,28 +356,28 @@
                         input.className = 'rojv-window__input'
                         if (settings[setting].type == 'checkbox') {
                             input.type = settings[setting].type
-                            input.checked = settings[setting].value
+                            input.checked = settingsValues[setting]
                         }
                         if (settings[setting]?.type == 'number') {
                             input.type = settings[setting].type
-                            input.value = settings[setting].value
+                            input.value = settingsValues[setting]
                         }
                         if (settings[setting].type == 'array') {
-                            input.value = settings[setting].value.join(', ')
+                            input.value = settingsValues[setting].join(', ')
                         }
                         if (settings[setting].type == 'color') {
                             input.type = settings[setting].type
-                            input.value = settings[setting].value
+                            input.value = settingsValues[setting]
                         }
                         input.addEventListener('change', () => {
                             if (settings[setting].type == 'checkbox') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.checked : rojvStorage.addons[addon].settings = { [setting]: settings[setting] }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.checked : rojvStorage.addons[addon].settings = { [setting]: input.checked }
                             }
                             if (settings[setting].type == 'number') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: settings[setting] }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
                             }
                             if (settings[setting].type == 'color') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: settings[setting] }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
                             }
                             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
                         }
@@ -852,19 +864,19 @@
             font-size: 10px;
         }
         [enhancement-upgrade-lvl="1"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-1'].value};
+            color: ${addonsSettings['enhancement-upgrade-lvl-1']};
         }
         [enhancement-upgrade-lvl="2"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-2'].value};
+            color: ${addonsSettings['enhancement-upgrade-lvl-2']};
         }
         [enhancement-upgrade-lvl="3"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-3'].value};
+            color: ${addonsSettings['enhancement-upgrade-lvl-3']};
         }
         [enhancement-upgrade-lvl="4"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-4'].value};
+            color: ${addonsSettings['enhancement-upgrade-lvl-4']};
         }
         [enhancement-upgrade-lvl="5"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-5'].value};
+            color: ${addonsSettings['enhancement-upgrade-lvl-5']};
         }
         [enhancement-upgrade-lvl]>p {
             text-shadow: black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px;
@@ -941,19 +953,19 @@
         const style = document.createElement('style')
         style.innerHTML = `
         .linked-chat-item[data-item-type="t-norm"] {
-            color: ${addonsSettings['common-item'].value};
+            color: ${addonsSettings['common-item']};
         }
         .linked-chat-item[data-item-type="t-uniupg"] {
-            color: ${addonsSettings['unique-item'].value};
+            color: ${addonsSettings['unique-item']};
         }
         .linked-chat-item[data-item-type="t-her"] {
-            color: ${addonsSettings['heroic-item'].value};
+            color: ${addonsSettings['heroic-item']};
         }
         .linked-chat-item[data-item-type="t-upgraded"] {
-            color: ${addonsSettings['upgraded-item'].value};
+            color: ${addonsSettings['upgraded-item']};
         }
         .linked-chat-item[data-item-type="t-leg"] {
-            color: ${addonsSettings['legendary-item'].value};
+            color: ${addonsSettings['legendary-item']};
         }
     `
         document.head.appendChild(style)
@@ -1539,7 +1551,7 @@
 
         const mapCords = new Map()
 
-        const borderColor = addonsSettings['border-color'].value
+        const borderColor = addonsSettings['border-color']
 
         const generateBorderImg = (() => {
             const canvas = document.createElement('canvas')
