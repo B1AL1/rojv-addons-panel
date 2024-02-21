@@ -983,7 +983,6 @@
 
         const colorDivisionOfLoot = () => {
             document.querySelectorAll('.new-chat-message .message-part.special-style-4').forEach((element) => {
-                console.log(element.innerText)
                 element.style.color = lootColor
             })
 
