@@ -951,7 +951,8 @@
         })
     })()
 
-    const loadDiverseColorsOnChat = (() => {
+    const loadDiverseColorsOnChat = (async () => {
+
         let addonName = 'diverse-colors-on-chat'
         if (!checkAddonAvailability(addonName)) return
         let addonsSettings = { ...defaultConfig.addons[addonName], ...rojvStorage.addons[addonName].settings }
@@ -976,13 +977,13 @@
     `
         document.head.appendChild(style)
 
-        const lootColor = addonsSettings['division-of-loot'].value
-        const nickColor = addonsSettings['nick'].value
+        const lootColor = addonsSettings['division-of-loot']
+        const nickColor = addonsSettings['nick']
 
         const colorNick = () => {
             document.querySelectorAll('.new-chat-message .message-part .message-section .mark-message-span').forEach((element) => {
                 if (element.innerText === Engine.hero.d.nick) {
-                    element.style.color = addonsSettings['nick'].value
+                    element.style.color = nickColor
                 }
             })
         }
@@ -1531,7 +1532,7 @@
                     }
                     npcsValueMap.set(id, { positionY, velocityY })
 
-                    ctx.drawImage(e2LabelImage, posLeft + fw / 2 - 12.5, posTop - 20 + positionY, 25, 14)
+                    ctx.drawImage(e2LabelImage, posLeft + fw / 2 - 12, posTop - 20 + positionY, 24, 14)
                 }
                 this.getOrder = () => 100
             }
