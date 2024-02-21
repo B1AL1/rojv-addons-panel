@@ -89,7 +89,7 @@
 
     await waitFor(() => forInterface(window.Engine && window.Engine.communication, window.g && window.parseInput), 50, 300)
 
-    const version = '20240213'
+    const version = '20240221'
 
     let rojvStorage = document.rojvPanel.GM_getValue('rojv-storage')
     if (!rojvStorage) {
