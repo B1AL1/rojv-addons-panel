@@ -54,6 +54,12 @@
         }
     }
 
+    const addItemId = (item, id) => {
+        if (item) {
+            item.id = id
+        }
+    }
+
     const isObject = (object) => {
         return object != null && typeof object === 'object'
     }
