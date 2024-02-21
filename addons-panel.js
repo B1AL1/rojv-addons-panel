@@ -89,7 +89,7 @@
 
     await waitFor(() => forInterface(window.Engine && window.Engine.communication, window.g && window.parseInput), 50, 300)
 
-    const version = '20240221'
+    const version = '20240213'
 
     let rojvStorage = document.rojvPanel.GM_getValue('rojv-storage')
     if (!rojvStorage) {
@@ -371,13 +371,13 @@
                         }
                         input.addEventListener('change', () => {
                             if (settings[setting].type == 'checkbox') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.checked : rojvStorage.addons[addon].settings = { [setting]: input.checked }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting] = input.checked : rojvStorage.addons[addon].settings = { [setting]: input.checked }
                             }
                             if (settings[setting].type == 'number') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting] = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
                             }
                             if (settings[setting].type == 'color') {
-                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting].value = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
+                                rojvStorage.addons[addon].settings ? rojvStorage.addons[addon].settings[setting] = input.value : rojvStorage.addons[addon].settings = { [setting]: input.value }
                             }
                             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
                         }
