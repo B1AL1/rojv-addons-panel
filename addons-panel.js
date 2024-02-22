@@ -18,33 +18,15 @@
         }
     }
 
-    const forClan = (clan) => {
-        if (clan) {
-            return true
+    const forObject = (obj) => {
+        if (obj) {
+            return obj
         }
     }
 
-    const forSettings = (settings) => {
-        if (settings) {
-            return settings
-        }
-    }
-
-    const forLocationItems = (locationItems) => {
-        if (locationItems.length > 0) {
-            return locationItems
-        }
-    }
-
-    const forChangePlayer = (changePlayer) => {
-        if (changePlayer) {
-            return changePlayer
-        }
-    }
-
-    const forHero = (hero) => {
-        if (hero) {
-            return hero
+    const forArray = (array) => {
+        if (array.length > 0) {
+            return array
         }
     }
 
@@ -753,7 +735,7 @@
         emitter.emit((before ? "before-" : "") + "game-response", data)
     }
 
-    const requestParserNI = (() => {
+    const requestParserNI = (async () => {
         if (interfaceType === 'old') return
 
         actionAfter(Engine.communication, 'send2', (...data) => {
@@ -790,7 +772,7 @@
 
     const initRojvAddonPanelButtonNI = (async () => {
         if (interfaceType === 'old') return
-        await waitFor(() => forSettings(window.Engine.settings), 50, 3000)
+        await waitFor(() => forObject(window.Engine.settings), 50, 3000)
         actionAfter(Engine.settings, 'toggle', () => {
             createRojvAddonPanelButtonNI()
         })
@@ -861,31 +843,49 @@
         if (!checkAddonAvailability(addonName)) return
         let addonsSettings = { ...defaultConfig.addons[addonName], ...rojvStorage.addons[addonName].settings }
 
+        const generateUpgradeImg = (color, lvl) => {
+            const canvas = document.createElement('canvas')
+            canvas.width = 32
+            canvas.height = 32
+            const ctx = canvas.getContext('2d')
+            ctx.shadowColor = "black"
+            ctx.shadowBlur = 2
+            ctx.lineWidth = 3
+            ctx.strokeText(`+${lvl}`, 18, 10)
+            ctx.shadowBlur = 0
+
+            ctx.font = '10px sans-serif'
+            ctx.fillStyle = color
+            ctx.fillText(`+${lvl}`, 18, 10)
+
+            return canvas.toDataURL()
+        }
+
         const style = document.createElement('style')
         style.innerHTML = `
-        [enhancement-upgrade-lvl] {
-            position: relative;
-            float: right;
-            padding-right: 2px;
-            font-size: 10px;
+        [enhancement-upgrade-lvl]::after, [data-frame-mania-upgrade]>.margo-item__icon::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
         }
-        [enhancement-upgrade-lvl="1"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-1']};
+        [enhancement-upgrade-lvl="1"]::after, [data-frame-mania-upgrade="1"]>.margo-item__icon::after {
+            background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-1'], 1)});
         }
-        [enhancement-upgrade-lvl="2"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-2']};
+        [enhancement-upgrade-lvl="2"]::after, [data-frame-mania-upgrade="2"]>.margo-item__icon::after {
+            background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-2'], 2)});
         }
-        [enhancement-upgrade-lvl="3"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-3']};
+        [enhancement-upgrade-lvl="3"]::after, [data-frame-mania-upgrade="3"]>.margo-item__icon::after {
+            background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-3'], 3)});
         }
-        [enhancement-upgrade-lvl="4"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-4']};
+        [enhancement-upgrade-lvl="4"]::after, [data-frame-mania-upgrade="4"]>.margo-item__icon::after {
+            background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-4'], 4)});
         }
-        [enhancement-upgrade-lvl="5"] {
-            color: ${addonsSettings['enhancement-upgrade-lvl-5']};
-        }
-        [enhancement-upgrade-lvl]>p {
-            text-shadow: black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px, black 0 0 5px;
+        [enhancement-upgrade-lvl="5"]::after, [data-frame-mania-upgrade="5"]>.margo-item__icon::after {
+            background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-5'], 5)});
         }
     `
         document.head.appendChild(style)
@@ -893,38 +893,20 @@
         const cachedItemsEnchancement = new Set()
 
         const updateItemEnhancement = (item, element) => {
-            const enhancementUpgradeElement = element.querySelector('.enhancement-upgrade')
             const enhancementUpgradeLevel = item.parsedStats.enhancement_upgrade_lvl
 
-            if (enhancementUpgradeElement) {
-                const currentLevel = enhancementUpgradeElement.getAttribute('enhancement-upgrade-lvl')
-                if (currentLevel !== enhancementUpgradeLevel) {
-                    enhancementUpgradeElement.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
-                    enhancementUpgradeElement.innerHTML = `<p>+${enhancementUpgradeLevel}</p>`
-                }
-            } else {
-                const enhancementUpgrade = document.createElement('div')
-                enhancementUpgrade.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
-                enhancementUpgrade.innerHTML = `<p>+${enhancementUpgradeLevel}</p>`
-                enhancementUpgrade.classList.add('enhancement-upgrade')
-                element.appendChild(enhancementUpgrade)
-            }
-        }
-
-        const removeItemEnhancement = (element) => {
-            if (element.querySelector('.enhancement-upgrade')) {
-                element.querySelector('.enhancement-upgrade').remove()
+            const currentLevel = element.getAttribute('enhancement-upgrade-lvl')
+            if (currentLevel !== enhancementUpgradeLevel && enhancementUpgradeLevel > 0) {
+                element.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
+            } else if (currentLevel !== enhancementUpgradeLevel && (enhancementUpgradeLevel == 0 || enhancementUpgradeLevel == undefined)) {
+                element.removeAttribute('enhancement-upgrade-lvl')
             }
         }
 
         const addUpgradeLvl = (items) => {
             items.forEach((item) => {
                 document.querySelectorAll(`.item-id-${item.id}`).forEach((element) => {
-                    if (item.parsedStats.enhancement_upgrade_lvl > 0) {
-                        updateItemEnhancement(item, element)
-                    } else {
-                        removeItemEnhancement(element)
-                    }
+                    updateItemEnhancement(item, element)
                 })
             })
         }
@@ -940,7 +922,7 @@
 
 
         RojvAPI.emitter.on('showOtherEq', async (data) => {
-            await waitFor(() => forLocationItems(Engine.items.fetchLocationItems('otherEqItem')), 50, 300)
+            await waitFor(() => forArray(Engine.items.fetchLocationItems('otherEqItem')), 50, 300)
             let locationItems = await Engine.items.fetchLocationItems('otherEqItem')
 
             locationItems.forEach((item) => {
@@ -1120,7 +1102,7 @@
 
     const loadInformChat = (async () => {
 
-        await waitFor(() => forClan(interfaceType == 'new' ? Engine.hero.d.clan : window.hero.clan), 50, 100)
+        await waitFor(() => forObject(interfaceType == 'new' ? Engine.hero.d.clan : window.hero.clan), 50, 100)
 
         let addonName = 'inform-chat'
         if (!checkAddonAvailability(addonName)) return
@@ -1288,8 +1270,8 @@
 
     const loadRelogEnhancer = (async () => {
 
-        await waitFor(() => forChangePlayer(Engine.changePlayer), 50, 100)
-        await waitFor(() => forHero(Engine.hero.d), 50, 100)
+        await waitFor(() => forObject(Engine.changePlayer), 50, 100)
+        await waitFor(() => forObject(Engine.hero.d), 50, 100)
 
         let addonName = 'relog-enhancer'
         if (!checkAddonAvailability(addonName) || typeof Engine.changePlayer === 'null' || typeof Engine.hero.d === 'null') return
@@ -1508,7 +1490,7 @@
         if (!checkAddonAvailability(addonName)) return
 
         const e2LabelImage = new Image()
-        e2LabelImage.src = 'https://i.imgur.com/yLDRU34.png'
+        e2LabelImage.src = 'https://i.imgur.com/d8alPfF.png'
 
         const amplitude = 4
         const e2GrpSet = new Set()
@@ -1538,7 +1520,7 @@
                     }
                     npcsValueMap.set(id, { positionY, velocityY })
 
-                    ctx.drawImage(e2LabelImage, posLeft + fw / 2 - 12, posTop - 20 + positionY, 24, 14)
+                    ctx.drawImage(e2LabelImage, posLeft + fw / 2 - 15, posTop - 24 + positionY, 30, 20)
                 }
                 this.getOrder = () => 100
             }
