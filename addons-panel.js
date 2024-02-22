@@ -863,7 +863,12 @@
 
         const style = document.createElement('style')
         style.innerHTML = `
-        [enhancement-upgrade-lvl]::after, [data-frame-mania-upgrade]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl] {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+        [data-frame-mania-upgrade]>.margo-item__icon::after {
             content: '';
             position: absolute;
             top: 0;
@@ -872,19 +877,19 @@
             height: 100%;
             z-index: 10;
         }
-        [enhancement-upgrade-lvl="1"]::after, [data-frame-mania-upgrade="1"]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl="1"], [data-frame-mania-upgrade="1"]>.margo-item__icon::after {
             background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-1'], 1)});
         }
-        [enhancement-upgrade-lvl="2"]::after, [data-frame-mania-upgrade="2"]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl="2"], [data-frame-mania-upgrade="2"]>.margo-item__icon::after {
             background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-2'], 2)});
         }
-        [enhancement-upgrade-lvl="3"]::after, [data-frame-mania-upgrade="3"]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl="3"], [data-frame-mania-upgrade="3"]>.margo-item__icon::after {
             background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-3'], 3)});
         }
-        [enhancement-upgrade-lvl="4"]::after, [data-frame-mania-upgrade="4"]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl="4"], [data-frame-mania-upgrade="4"]>.margo-item__icon::after {
             background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-4'], 4)});
         }
-        [enhancement-upgrade-lvl="5"]::after, [data-frame-mania-upgrade="5"]>.margo-item__icon::after {
+        [enhancement-upgrade-lvl="5"], [data-frame-mania-upgrade="5"]>.margo-item__icon::after {
             background-image: url(${generateUpgradeImg(addonsSettings['enhancement-upgrade-lvl-5'], 5)});
         }
     `
@@ -893,20 +898,36 @@
         const cachedItemsEnchancement = new Set()
 
         const updateItemEnhancement = (item, element) => {
+            const enhancementUpgradeElement = element.querySelector('.enhancement-upgrade')
             const enhancementUpgradeLevel = item.parsedStats.enhancement_upgrade_lvl
 
-            const currentLevel = element.getAttribute('enhancement-upgrade-lvl')
-            if (currentLevel !== enhancementUpgradeLevel && enhancementUpgradeLevel > 0) {
-                element.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
-            } else if (currentLevel !== enhancementUpgradeLevel && (enhancementUpgradeLevel == 0 || enhancementUpgradeLevel == undefined)) {
-                element.removeAttribute('enhancement-upgrade-lvl')
+            if (enhancementUpgradeElement) {
+                const currentLevel = enhancementUpgradeElement.getAttribute('enhancement-upgrade-lvl')
+                if (currentLevel !== enhancementUpgradeLevel) {
+                    enhancementUpgradeElement.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
+                }
+            } else {
+                const enhancementUpgrade = document.createElement('div')
+                enhancementUpgrade.setAttribute('enhancement-upgrade-lvl', enhancementUpgradeLevel)
+                enhancementUpgrade.classList.add('enhancement-upgrade')
+                element.appendChild(enhancementUpgrade)
+            }
+        }
+
+        const removeItemEnhancement = (element) => {
+            if (element.querySelector('.enhancement-upgrade')) {
+                element.querySelector('.enhancement-upgrade').remove()
             }
         }
 
         const addUpgradeLvl = (items) => {
             items.forEach((item) => {
                 document.querySelectorAll(`.item-id-${item.id}`).forEach((element) => {
-                    updateItemEnhancement(item, element)
+                    if (item.parsedStats.enhancement_upgrade_lvl > 0) {
+                        updateItemEnhancement(item, element)
+                    } else {
+                        removeItemEnhancement(element)
+                    }
                 })
             })
         }
@@ -1285,6 +1306,7 @@
             }
         })()
 
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
             API.Storage.set("charlist/" + accountId, listOfCharacters)
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
@@ -1296,7 +1318,6 @@
             } else {
                 rojvStorage.addons[addonName].main = accountId
             }
-            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
 
             let mainId = rojvStorage.addons[addonName].main
             let guestId = rojvStorage.addons[addonName].guest
@@ -1311,13 +1332,6 @@
             rojvStorage.addons[addonName].accounts = accountIds
             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
 
-
-            if (isGuest) {
-                rojvStorage.addons[addonName].guest = accountId
-            } else {
-                rojvStorage.addons[addonName].main = accountId
-            }
-
             Engine.changePlayer.prepareList(charList)
             Engine.changePlayer.createWorldList()
             Engine.changePlayer.createCharacters()
@@ -1327,6 +1341,7 @@
 
         Engine.changePlayer.createCharacters = () => {
             let accountCharacterIds = []
+            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
             if (accountIds != null) {
