@@ -735,7 +735,7 @@
         emitter.emit((before ? "before-" : "") + "game-response", data)
     }
 
-    const requestParserNI = (async () => {
+    const requestParserNI = (() => {
         if (interfaceType === 'old') return
 
         actionAfter(Engine.communication, 'send2', (...data) => {
