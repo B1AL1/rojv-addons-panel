@@ -1199,20 +1199,23 @@
                 sendMessageOnClanChat(`1 na ${npc.nick} (${npc.lvl} lvl) ${interfaceType == 'new' ? Engine.map.d.name : window.map.name} (${npc.x}, ${npc.y})`)
             } else {
                 const latestMessage = trimmedMessages[trimmedMessages.length - 1]
-                const latestMessageTime = new Date(latestMessage.ts * 1000)
                 const now = new Date()
-
-                if (latestMessageTime.getHours() === now.getHours() && latestMessageTime.getMinutes() - now.getMinutes() < 15) {
-                    return
-                }
-
-                const senderNick = getEngine().businessCardManager.getCard(latestMessage.sender).getNick()
-                if (senderNick === hero.nick) {
-                    return
-                }
-
                 const nextMessageNumber = Number(latestMessage.msg.split(' ')[0]) + 1
-                sendMessageOnClanChat(`${nextMessageNumber} na ${npc.nick} (${npc.lvl} lvl)`)
+
+                for (let message of trimmedMessages) {
+                    const senderNick = getEngine().businessCardManager.getCard(message.sender).getNick()
+                    let messageTime = new Date(message.ts * 1000)
+
+                    if (now - messageTime < 900000) {
+                        return
+                    }
+
+                    if (senderNick === hero.nick) {
+                        return
+                    }
+
+                    sendMessageOnClanChat(`${nextMessageNumber} na ${npc.nick} (${npc.lvl} lvl)`)
+                }
             }
         }
 
@@ -1545,7 +1548,6 @@
             for (let i = -5; i < 6; i++) {
                 for (let j = -5; j < 6; j++) {
                     if (
-                        Math.pow(i, 2) + Math.pow(j, 2) <= 25 &&
                         a + i >= 0 &&
                         b + j >= 0 &&
                         a + i <= Engine.map.d.x &&
