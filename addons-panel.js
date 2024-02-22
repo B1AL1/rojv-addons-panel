@@ -1012,6 +1012,56 @@
             'common': 't-norm'
         }
 
+        let cachedItemsLootDivision = new Set()
+
+        RojvAPI.emitter.on('game-response', data => {
+            if (data.item && data.loot) {
+                let items = data.item
+                for (let item in items) {
+                    parseItemStats(items[item])
+                    addItemId(items[item], item)
+                    cachedItemsLootDivision.add(items[item])
+                }
+            }
+        })
+
+        const setContainsObjectWithName = (set, nameToCheck) => {
+            for (const obj of set) {
+                if (obj.name === nameToCheck) {
+                    return true
+                }
+            }
+            return false
+        }
+
+        const parsedMessages = Engine.chatLinkedItemsManager.parseReceiveMessageWithLinkedItem
+        Engine.chatLinkedItemsManager.parseReceiveMessageWithLinkedItem = (message, e, i) => {
+            let messages = parsedMessages(message, e, i)
+
+            let results_ITEM_parsed = []
+
+            let match_ITEM
+            while ((match_ITEM = pattern_ITEM.exec(message)) !== null) {
+                results_ITEM_parsed.push(match_ITEM)
+            }
+            pattern_ITEM.lastIndex = 0
+
+            results_ITEM_parsed.filter((item) => setContainsObjectWithName(cachedItemsLootDivision, item[3].replace(/\"|\\/g, ''))).forEach((item) => {
+                let itemName = item[3].replace(/\"|\\/g, '')
+                let itemData = [...cachedItemsLootDivision].find((obj) => obj.name === itemName)
+
+                messages.forEach((msg) => {
+                    if (msg[0].innerText.includes(itemName) && !msg[0].getAttribute('data-item-type')) {
+                        if (msg[0].innerText.includes(itemName)) {
+                            msg[0].setAttribute('data-item-type', itemTypes[itemData.parsedStats.rarity])
+                        }
+                    }
+                })
+            })
+
+            return messages
+        }
+
         RojvAPI.emitter.on('chat', async (messages) => {
             if (window.Engine.logOff) return
             colorNick()
@@ -1058,7 +1108,7 @@
                                 let rarity = items[item].parsedStats.rarity
                                 let name = items[item].name
                                 htmlMessages.forEach((message) => {
-                                    if (message.textContent.includes(name)) {
+                                    if (message.textContent.includes(name) && !message.getAttribute('data-item-type')) {
                                         message.setAttribute('data-item-type', itemTypes[rarity])
                                     }
                                 })
@@ -1445,7 +1495,7 @@
 
                     ctx.drawImage(maskImg(grp, fw, fh), posLeft, posTop, fw, fh)
                 }
-                this.getOrder = () => 1
+                this.getOrder = () => 2
             }
         }
 
