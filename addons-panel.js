@@ -938,7 +938,6 @@
             addUpgradeLvl(items)
         })
 
-
         RojvAPI.emitter.on('showOtherEq', async (data) => {
             await waitFor(() => forArray(Engine.items.fetchLocationItems('otherEqItem')), 50, 300)
             let locationItems = await Engine.items.fetchLocationItems('otherEqItem')
@@ -1017,6 +1016,13 @@
         RojvAPI.emitter.on('game-response', data => {
             if (data.item && data.loot) {
                 let items = data.item
+                for (let item in items) {
+                    parseItemStats(items[item])
+                    addItemId(items[item], item)
+                    cachedItemsLootDivision.add(items[item])
+                }
+            } else if (data.item_tpl) {
+                let items = data.item_tpl
                 for (let item in items) {
                     parseItemStats(items[item])
                     addItemId(items[item], item)
