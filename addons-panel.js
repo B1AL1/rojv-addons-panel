@@ -895,8 +895,6 @@
     `
         document.head.appendChild(style)
 
-        const cachedItemsEnchancement = new Set()
-
         const updateItemEnhancement = (item, element) => {
             const enhancementUpgradeElement = element.querySelector('.enhancement-upgrade')
             const enhancementUpgradeLevel = item.parsedStats.enhancement_upgrade_lvl
@@ -921,24 +919,23 @@
         }
 
         const addUpgradeLvl = (items) => {
-            items.forEach((item) => {
-                document.querySelectorAll(`.item-id-${item.id}`).forEach((element) => {
-                    if (item.parsedStats.enhancement_upgrade_lvl > 0) {
-                        updateItemEnhancement(item, element)
+            for (let item in items) {
+                document.querySelectorAll(`.item-id-${items[item].id}`).forEach((element) => {
+                    if (items[item].parsedStats.enhancement_upgrade_lvl > 0) {
+                        updateItemEnhancement(items[item], element)
                     } else {
                         removeItemEnhancement(element)
                     }
                 })
-            })
+            }
         }
 
         RojvAPI.emitter.on('item', items => {
             for (let item in items) {
                 parseItemStats(items[item])
                 addItemId(items[item], item)
-                cachedItemsEnchancement.add(items[item])
             }
-            addUpgradeLvl(cachedItemsEnchancement)
+            addUpgradeLvl(items)
         })
 
 
@@ -1003,7 +1000,7 @@
             })
         }
 
-        let pattern_ITEM = /(ITEM|TPL)#([A-Za-z0-9]+):(".*?")/g
+        let pattern_ITEM = /(ITEM|TPL)#([A-Za-z0-9]+):(".*?"|\\".*?\\")/g
 
         const itemTypes = {
             'heroic': 't-her',
@@ -1013,53 +1010,6 @@
             'legendary': 't-leg',
             'artefact': 't-art',
             'common': 't-norm'
-        }
-
-        let cachedItemsLootDivision = new Set()
-
-        RojvAPI.emitter.on('item', items => {
-            for (let item in items) {
-                parseItemStats(items[item])
-                addItemId(items[item], item)
-                cachedItemsLootDivision.add(items[item])
-            }
-        })
-
-        const setContainsObjectWithName = (set, nameToCheck) => {
-            for (const obj of set) {
-                if (obj.name === nameToCheck) {
-                    return true
-                }
-            }
-            return false
-        }
-
-        const parsedMessages = Engine.chatLinkedItemsManager.parseReceiveMessageWithLinkedItem
-        Engine.chatLinkedItemsManager.parseReceiveMessageWithLinkedItem = (message, e, i) => {
-            let messages = parsedMessages(message, e, i)
-
-            let results_ITEM_parsed = []
-
-            let match_ITEM
-            while ((match_ITEM = pattern_ITEM.exec(message)) !== null) {
-                results_ITEM_parsed.push(match_ITEM)
-            }
-            pattern_ITEM.lastIndex = 0
-
-            results_ITEM_parsed.filter((item) => setContainsObjectWithName(cachedItemsLootDivision, item[3].replace(/\"|\\/g, ''))).forEach((item) => {
-                let itemName = item[3].replace(/\"|\\/g, '')
-                let itemData = [...cachedItemsLootDivision].find((obj) => obj.name === itemName)
-
-                messages.forEach((msg) => {
-                    if (msg[0].attributes['data-item-type'] == undefined) {
-                        if (msg[0].innerText.includes(itemName)) {
-                            msg[0].setAttribute('data-item-type', itemTypes[itemData.parsedStats.rarity])
-                        }
-                    }
-                })
-            })
-
-            return messages
         }
 
         RojvAPI.emitter.on('chat', async (messages) => {
@@ -1075,8 +1025,9 @@
                 let mess = messages.channels[channel].msg
                 if (mess) {
                     await Promise.all(mess.map(async (message) => {
+                        const msg = message.msg ? message.msg : message.code
                         let match_ITEM
-                        while ((match_ITEM = pattern_ITEM.exec(message.msg)) !== null) {
+                        while ((match_ITEM = pattern_ITEM.exec(msg)) !== null) {
                             results_ITEM.push(match_ITEM)
                         }
                         pattern_ITEM.lastIndex = 0
@@ -1138,10 +1089,7 @@
             y: interfaceType == 'new' ? Engine.hero.d.y : window.hero.y,
         }
 
-        const hero = {
-            proxy: interfaceType == 'new' ? Engine.hero : window.hero,
-            details: interfaceType == 'new' ? Engine.hero.d : window.hero,
-        }
+        const heroDetails = interfaceType == 'new' ? Engine.hero.d : window.hero
 
         const spottedNpcs = []
 
@@ -1157,10 +1105,12 @@
                 const ret = Reflect.set(...args)
                 const [object, property] = args
                 if (['rx', 'ry'].includes(property)) {
-                    if ((interfaceType == 'new' ? checkHeroCoords(object.d.x, object.d.y) : checkHeroCoords(object.x, object.y)) && spottedNpcs.length > 0) {
+                    const { x, y } = interfaceType == 'new' ? object.d : object
+                    if (checkHeroCoords(x, y) && spottedNpcs.length > 0) {
                         spottedNpcs.forEach((npc) => {
-                            if (Math.sqrt(Math.pow(hero.details.x - npc.details.x, 2) + Math.pow(hero.details.y - npc.details.y, 2)) < 12) {
-                                infromChat(hero.details, npc.details)
+                            const distance = Math.sqrt(Math.pow(heroDetails.x - npc.x, 2) + Math.pow(heroDetails.y - npc.y, 2))
+                            if (distance < 12) {
+                                infromChat(heroDetails, npc)
                             }
                         })
                     }
@@ -1179,20 +1129,24 @@
             return arr
         }
 
-        if (interfaceType == 'new') {
-            Engine.hero = new Proxy(hero.proxy, heroProxyHandler)
-        } else if (interfaceType == 'old') {
+        if (interfaceType === 'old') {
             const _clearMessageList = getEngine().chatController.clearMessageList
             getEngine().chatController.clearMessageList = (data) => {
                 removeObjectWithChannel(cachedMessages, data)
                 _clearMessageList(data)
             }
+
             RojvAPI.emitter.on('game-response', (data) => {
-                if (data.e === 'ok' && data.chat && data.matchmaking_state == 0) {
+                if (data.e === 'ok' && data.chat && data.matchmaking_state === 0) {
                     cachedMessages.splice(0, cachedMessages.length)
                 }
             })
-            window.hero = new Proxy(hero.proxy, heroProxyHandler)
+        }
+
+        if (interfaceType === 'new') {
+            Engine.hero = new Proxy(Engine.hero, heroProxyHandler)
+        } else if (interfaceType === 'old') {
+            window.hero = new Proxy(window.hero, heroProxyHandler)
         }
 
         const cachedMessages = []
@@ -1217,10 +1171,10 @@
         const npcSpotted = (npc) => {
             let npcDetails = interfaceType == 'new' ? npc.d : npc
             if (npcDetails.wt > 79) {
-                spottedNpcs.push({ details: npcDetails })
+                spottedNpcs.push(npcDetails)
                 spottedNpcs.forEach((spottedNpc) => {
-                    if (Math.sqrt(Math.pow(hero.details.x - spottedNpc.details.x, 2) + Math.pow(hero.details.y - spottedNpc.details.y, 2)) < 12) {
-                        infromChat(hero.details, spottedNpc.details)
+                    if (Math.sqrt(Math.pow(heroDetails.x - spottedNpc.x, 2) + Math.pow(heroDetails.y - spottedNpc.y, 2)) < 12) {
+                        infromChat(heroDetails, spottedNpc)
                     }
                 })
             }
@@ -1239,29 +1193,26 @@
         }
 
         const infromChat = (hero, npc) => {
-            const trimmedMessages = []
-
-            cachedMessages.forEach((msg) => {
-                if (msg.msg.includes(` na ${npc.nick} (${npc.lvl} lvl) `)) {
-                    trimmedMessages.push(msg)
-                }
-            })
+            const trimmedMessages = cachedMessages.filter(msg => msg.msg.includes(` na ${npc.nick} (${npc.lvl} lvl) `))
 
             if (trimmedMessages.length == 0) {
                 sendMessageOnClanChat(`1 na ${npc.nick} (${npc.lvl} lvl) ${interfaceType == 'new' ? Engine.map.d.name : window.map.name} (${npc.x}, ${npc.y})`)
             } else {
-                let whichOne = Number(trimmedMessages[trimmedMessages.length - 1].msg.split(' ')[0])
-                for (let message of trimmedMessages) {
-                    let dateNow = new Date()
-                    let messageTime = new Date(message.ts * 1000)
-                    let messageHour = messageTime.getHours()
-                    let messageMinute = messageTime.getMinutes()
-                    const senderNick = getEngine().businessCardManager.getCard(message.sender).getNick()
-                    if (messageHour - dateNow.getHours() == 0 && messageMinute - dateNow.getMinutes() < 15 && senderNick === hero.nick) {
-                        return
-                    }
+                const latestMessage = trimmedMessages[trimmedMessages.length - 1]
+                const latestMessageTime = new Date(latestMessage.ts * 1000)
+                const now = new Date()
+
+                if (latestMessageTime.getHours() === now.getHours() && latestMessageTime.getMinutes() - now.getMinutes() < 15) {
+                    return
                 }
-                sendMessageOnClanChat(`${whichOne + 1} na ${npc.nick} (${npc.lvl} lvl)`)
+
+                const senderNick = getEngine().businessCardManager.getCard(latestMessage.sender).getNick()
+                if (senderNick === hero.nick) {
+                    return
+                }
+
+                const nextMessageNumber = Number(latestMessage.msg.split(' ')[0]) + 1
+                sendMessageOnClanChat(`${nextMessageNumber} na ${npc.nick} (${npc.lvl} lvl)`)
             }
         }
 
@@ -1344,30 +1295,37 @@
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-            if (accountIds != null) {
-                for (const [key, value] of Object.entries(accountIds)) {
-                    if (key == accountId) {
-                        accountCharacterIds = value.map(character => character.id)
-                    }
-                }
+            const value = accountIds[accountId]
+            if (Array.isArray(value)) {
+                accountCharacterIds = value.map(character => character.id)
             }
 
             Object.values(Engine.changePlayer.list)
                 .filter(character => accountCharacterIds.includes(character.id))
-                .sort((prevCharacter, nextCharacter) => prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick))
-                .map(character => {
+                .sort((prevCharacter, nextCharacter) => {
+                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
+                })
+                .forEach(character => {
                     const worldName = character.world
                     const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
+                    const container = Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`)
+                    if (container) {
+                        container.appendChild(createOneCharacter)
+                    }
                 })
 
             Object.values(Engine.changePlayer.list)
-                .filter(chr => !accountCharacterIds.includes(chr.id))
-                .sort((prevCharacter, nextCharacter) => prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick))
-                .map(character => {
+                .filter(character => !accountCharacterIds.includes(character.id))
+                .sort((prevCharacter, nextCharacter) => {
+                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
+                })
+                .forEach(character => {
                     const worldName = character.world
                     const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
+                    const container = Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`)
+                    if (container) {
+                        container.appendChild(createOneCharacter)
+                    }
                 })
         }
 
@@ -1384,15 +1342,13 @@
             let accountCharacters = []
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-            if (accountIds != null) {
-                for (const [key, value] of Object.entries(accountIds)) {
-                    if (key == accountId) {
-                        accountCharacters = value
-                    }
+            for (const [key, value] of Object.entries(accountIds)) {
+                if (key == accountId) {
+                    accountCharacters = value
                 }
             }
 
-            if (accountCharacters.filter(chr => chr.id === characterId).length == 0) {
+            if (!accountCharacters.some(chr => chr.id === characterId)) {
                 const hs3Cookie = window.getCookie('hs3')
                 fetch('https://www.margonem.pl/ajax/' + relogType, {
                     method: 'POST',
@@ -1443,7 +1399,7 @@
 
         const generateRandomColor = () => `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`
 
-        const colors = []
+        const colors = new Map()
 
         const getColorByIndex = (index) => {
             colors[index] = colors[index] || generateRandomColor()
@@ -1545,6 +1501,9 @@
 
         RojvAPI.emitter.on('town', (data) => {
             e2GrpSet.clear()
+        })
+        API.addCallbackToEvent('removeNpc', (npc) => {
+            npcsValueMap.delete(npc.d.id)
         })
     })()
 
