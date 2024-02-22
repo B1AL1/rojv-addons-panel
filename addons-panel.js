@@ -1206,16 +1206,11 @@
                     const senderNick = getEngine().businessCardManager.getCard(message.sender).getNick()
                     let messageTime = new Date(message.ts * 1000)
 
-                    if (now - messageTime < 900000) {
+                    if (now - messageTime < 900000 && senderNick === hero.nick) {
                         return
                     }
-
-                    if (senderNick === hero.nick) {
-                        return
-                    }
-
-                    sendMessageOnClanChat(`${nextMessageNumber} na ${npc.nick} (${npc.lvl} lvl)`)
                 }
+                sendMessageOnClanChat(`${nextMessageNumber} na ${npc.nick} (${npc.lvl} lvl)`)
             }
         }
 
