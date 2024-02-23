@@ -1298,9 +1298,21 @@
 
         await waitFor(() => forObject(Engine.changePlayer), 50, 100)
         await waitFor(() => forObject(Engine.hero.d), 50, 100)
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
 
         let addonName = 'relog-enhancer'
-        if (!checkAddonAvailability(addonName) || typeof Engine.changePlayer === 'null' || typeof Engine.hero.d === 'null') return
+        if (!checkAddonAvailability(addonName)) {
+            return
+        } else if (typeof Engine.changePlayer === 'undefined') {
+            console.error('Engine.changePlayer is undefined')
+            return
+        } else if (typeof Engine.hero.d === 'undefined') {
+            console.error('Engine.hero.d is undefined')
+            return
+        } else if (typeof Engine.changePlayer.onSuccess === 'undefined') {
+            console.error('Engine.changePlayer.onSuccess is undefined')
+            return
+        }
 
         const accountId = Engine.hero.d.account
         const isGuest = (() => {
@@ -1311,7 +1323,6 @@
             }
         })()
 
-        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
             API.Storage.set("charlist/" + accountId, listOfCharacters)
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
