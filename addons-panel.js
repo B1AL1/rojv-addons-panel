@@ -1298,7 +1298,6 @@
 
         await waitFor(() => forObject(Engine.changePlayer), 50, 100)
         await waitFor(() => forObject(Engine.hero.d), 50, 100)
-        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
 
         let addonName = 'relog-enhancer'
         if (!checkAddonAvailability(addonName)) {
@@ -1308,9 +1307,6 @@
             return
         } else if (typeof Engine.hero.d === 'undefined') {
             console.error('Engine.hero.d is undefined')
-            return
-        } else if (typeof Engine.changePlayer.onSuccess === 'undefined') {
-            console.error('Engine.changePlayer.onSuccess is undefined')
             return
         }
 
@@ -1322,6 +1318,13 @@
                 return false
             }
         })()
+
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
+
+        if (Engine.changePlayer.onSuccess === null) {
+            console.error('Engine.changePlayer.onSuccess is undefined')
+            return
+        }
 
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
             API.Storage.set("charlist/" + accountId, listOfCharacters)
