@@ -1312,7 +1312,7 @@
 
         const accountId = Engine.hero.d.account
         const isGuest = (() => {
-            if (Engine.hero.d.guest) {
+            if (typeof Engine.hero.d.guest !== 'undefined' && Engine.hero.d.guest === '1') {
                 return true
             } else {
                 return false
