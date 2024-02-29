@@ -1321,6 +1321,17 @@
 
         const relogType = isGuest ? 'logout' : 'loginSubstitute'
 
+        if (isGuest) {
+            rojvStorage.addons[addonName].guest = accountId
+        } else {
+            rojvStorage.addons[addonName].main = accountId
+        }
+
+        const mainId = rojvStorage.addons[addonName].main
+        const guestId = rojvStorage.addons[addonName].guest
+
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+
         Engine.changePlayer.createCharacters = () => {
             let accountCharacterIds = []
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
@@ -1354,7 +1365,7 @@
                 })
         }
 
-        Engine.changePlayer.reloadPlayer = (characterId) => {
+        Engine.changePlayer.reloadPlayer = async (characterId) => {
             const relog = () => {
                 const character = Engine.changePlayer.list[characterId]
                 let date = new Date
@@ -1363,14 +1374,9 @@
                 setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
                 window.location.replace("https://" + character.world + ".margonem." + domain)
             }
-            let accountCharacters = []
 
-            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-            for (const [key, value] of Object.entries(accountIds)) {
-                if (key == accountId) {
-                    accountCharacters = value
-                }
-            }
+            const accountIds = await rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+            const accountCharacters = accountIds[accountId]
 
             if (!accountCharacters.some(chr => chr.id === characterId)) {
                 const hs3Cookie = window.getCookie('hs3')
@@ -1398,15 +1404,6 @@
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
             let charList = []
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-
-            if (isGuest) {
-                rojvStorage.addons[addonName].guest = accountId
-            } else {
-                rojvStorage.addons[addonName].main = accountId
-            }
-
-            let mainId = rojvStorage.addons[addonName].main
-            let guestId = rojvStorage.addons[addonName].guest
 
             const idsToCheck = [mainId, guestId].filter(id => id in accountIds)
             charList = await idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
