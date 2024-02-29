@@ -874,6 +874,12 @@
 
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
 
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
+        if (typeof Engine.changePlayer.onSuccess !== 'function' || Engine.changePlayer.onSuccess === null) {
+            console.error('Engine.changePlayer.onSuccess is null')
+            return
+        }
+
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
             const accountId = Engine.hero.d.account
             API.Storage.set("charlist/" + accountId, listOfCharacters)
