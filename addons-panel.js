@@ -863,8 +863,6 @@
             }
         })()
 
-        const relogType = isGuest ? 'logout' : 'loginSubstitute'
-
         if (isGuest) {
             rojvStorage.addons[addonName].guest = accountId
         } else {
@@ -877,6 +875,7 @@
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
 
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
+            const accountId = Engine.hero.d.account
             API.Storage.set("charlist/" + accountId, listOfCharacters)
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
             let charList = []
@@ -897,6 +896,7 @@
         }
 
         Engine.changePlayer.createCharacters = () => {
+            const accountId = Engine.hero.d.account
             let accountCharacterIds = []
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
 
@@ -938,6 +938,10 @@
                 setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
                 window.location.replace("https://" + character.world + ".margonem." + domain)
             }
+            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            const accountId = Engine.hero.d.account
+
+            const relogType = typeof Engine.hero.d.guest !== 'undefined' && Engine.hero.d.guest === '1' ? 'logout' : 'loginSubstitute'
 
             const accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
             const accountCharacters = accountIds[accountId]
