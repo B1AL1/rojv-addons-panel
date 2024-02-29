@@ -876,21 +876,14 @@
 
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
 
-        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
-
-        if (Engine.changePlayer.onSuccess === null) {
-            console.error('Engine.changePlayer.onSuccess is undefined')
-            return
-        }
-
-        Engine.changePlayer.onSuccess = async (listOfCharacters) => {
+        Engine.changePlayer.onSuccess = (listOfCharacters) => {
             API.Storage.set("charlist/" + accountId, listOfCharacters)
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
             let charList = []
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
 
             const idsToCheck = [mainId, guestId].filter(id => id in accountIds)
-            charList = await idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
+            charList = idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
 
             accountIds[accountId] = margonemLocalStorage.charlist[accountId]
             rojvStorage.addons[addonName].accounts = accountIds
@@ -936,7 +929,7 @@
                 })
         }
 
-        Engine.changePlayer.reloadPlayer = async (characterId) => {
+        Engine.changePlayer.reloadPlayer = (characterId) => {
             const relog = () => {
                 const character = Engine.changePlayer.list[characterId]
                 let date = new Date
@@ -946,7 +939,7 @@
                 window.location.replace("https://" + character.world + ".margonem." + domain)
             }
 
-            const accountIds = await rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+            const accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
             const accountCharacters = accountIds[accountId]
 
             if (!accountCharacters.some(chr => chr.id === characterId)) {
