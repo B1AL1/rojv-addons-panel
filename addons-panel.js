@@ -1319,45 +1319,6 @@
             }
         })()
 
-        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
-
-        if (Engine.changePlayer.onSuccess === null) {
-            console.error('Engine.changePlayer.onSuccess is undefined')
-            return
-        }
-
-        Engine.changePlayer.onSuccess = (listOfCharacters) => {
-            API.Storage.set("charlist/" + accountId, listOfCharacters)
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
-            let charList = []
-            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-
-            if (isGuest) {
-                rojvStorage.addons[addonName].guest = accountId
-            } else {
-                rojvStorage.addons[addonName].main = accountId
-            }
-
-            let mainId = rojvStorage.addons[addonName].main
-            let guestId = rojvStorage.addons[addonName].guest
-
-            for (const [key, value] of Object.entries(accountIds)) {
-                if (key == mainId || key == guestId) {
-                    charList = [...charList, ...value]
-                }
-            }
-
-            accountIds[accountId] = margonemLocalStorage.charlist[accountId]
-            rojvStorage.addons[addonName].accounts = accountIds
-            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-
-            Engine.changePlayer.prepareList(charList)
-            Engine.changePlayer.createWorldList()
-            Engine.changePlayer.createCharacters()
-            Engine.changePlayer.selectCurrentWorld()
-            Engine.changePlayer.updateScroll()
-        }
-
         Engine.changePlayer.createCharacters = () => {
             let accountCharacterIds = []
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
@@ -1376,10 +1337,7 @@
                 .forEach(character => {
                     const worldName = character.world
                     const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    const container = Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`)
-                    if (container) {
-                        container.appendChild(createOneCharacter)
-                    }
+                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
                 })
 
             Object.values(Engine.changePlayer.list)
@@ -1390,10 +1348,7 @@
                 .forEach(character => {
                     const worldName = character.world
                     const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    const container = Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`)
-                    if (container) {
-                        container.appendChild(createOneCharacter)
-                    }
+                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
                 })
         }
 
@@ -1406,7 +1361,7 @@
                 setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
                 window.location.replace("https://" + character.world + ".margonem." + domain)
             }
-            const relogType = Engine.hero.d.guest ? 'logout' : 'loginSubstitute'
+            const relogType = isGuest ? 'logout' : 'loginSubstitute'
             let accountCharacters = []
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
@@ -1428,6 +1383,42 @@
                     credentials: 'include',
                 }).then(relog)
             } else relog()
+        }
+
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
+
+        if (Engine.changePlayer.onSuccess === null) {
+            console.error('Engine.changePlayer.onSuccess is undefined')
+            return
+        }
+
+        Engine.changePlayer.onSuccess = async (listOfCharacters) => {
+            API.Storage.set("charlist/" + accountId, listOfCharacters)
+            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            let charList = []
+            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+
+            if (isGuest) {
+                rojvStorage.addons[addonName].guest = accountId
+            } else {
+                rojvStorage.addons[addonName].main = accountId
+            }
+
+            let mainId = rojvStorage.addons[addonName].main
+            let guestId = rojvStorage.addons[addonName].guest
+
+            const idsToCheck = [mainId, guestId].filter(id => id in accountIds)
+            charList = await idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
+
+            accountIds[accountId] = margonemLocalStorage.charlist[accountId]
+            rojvStorage.addons[addonName].accounts = accountIds
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+
+            Engine.changePlayer.prepareList(charList)
+            Engine.changePlayer.createWorldList()
+            Engine.changePlayer.createCharacters()
+            Engine.changePlayer.selectCurrentWorld()
+            Engine.changePlayer.updateScroll()
         }
     })()
 
