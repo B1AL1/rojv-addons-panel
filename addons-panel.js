@@ -838,6 +838,132 @@
 
     window.RojvAPI.openRojvAddonPanel = openRojvAddonPanel
 
+    const loadRelogEnhancer = (async () => {
+
+        await waitFor(() => forObject(Engine.changePlayer), 50, 100)
+        await waitFor(() => forObject(Engine.hero.d), 50, 100)
+
+        let addonName = 'relog-enhancer'
+        if (!checkAddonAvailability(addonName)) {
+            return
+        } else if (typeof Engine.changePlayer === 'undefined') {
+            console.error('Engine.changePlayer is undefined')
+            return
+        } else if (typeof Engine.hero.d === 'undefined') {
+            console.error('Engine.hero.d is undefined')
+            return
+        }
+
+        const accountId = Engine.hero.d.account
+        const isGuest = (() => {
+            if (typeof Engine.hero.d.guest !== 'undefined' && Engine.hero.d.guest === '1') {
+                return true
+            } else {
+                return false
+            }
+        })()
+
+        const relogType = isGuest ? 'logout' : 'loginSubstitute'
+
+        if (isGuest) {
+            rojvStorage.addons[addonName].guest = accountId
+        } else {
+            rojvStorage.addons[addonName].main = accountId
+        }
+
+        const mainId = rojvStorage.addons[addonName].main || accountId
+        const guestId = rojvStorage.addons[addonName].guest || accountId
+
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+
+        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
+
+        if (Engine.changePlayer.onSuccess === null) {
+            console.error('Engine.changePlayer.onSuccess is undefined')
+            return
+        }
+
+        Engine.changePlayer.onSuccess = async (listOfCharacters) => {
+            API.Storage.set("charlist/" + accountId, listOfCharacters)
+            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            let charList = []
+            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+
+            const idsToCheck = [mainId, guestId].filter(id => id in accountIds)
+            charList = await idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
+
+            accountIds[accountId] = margonemLocalStorage.charlist[accountId]
+            rojvStorage.addons[addonName].accounts = accountIds
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+
+            Engine.changePlayer.prepareList(charList)
+            Engine.changePlayer.createWorldList()
+            Engine.changePlayer.createCharacters()
+            Engine.changePlayer.selectCurrentWorld()
+            Engine.changePlayer.updateScroll()
+        }
+
+        Engine.changePlayer.createCharacters = () => {
+            let accountCharacterIds = []
+            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+
+            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+            const value = accountIds[accountId]
+            if (Array.isArray(value)) {
+                accountCharacterIds = value.map(character => character.id)
+            }
+
+            Object.values(Engine.changePlayer.list)
+                .filter(character => accountCharacterIds.includes(character.id))
+                .sort((prevCharacter, nextCharacter) => {
+                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
+                })
+                .forEach(character => {
+                    const worldName = character.world
+                    const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
+                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
+                })
+
+            Object.values(Engine.changePlayer.list)
+                .filter(character => !accountCharacterIds.includes(character.id))
+                .sort((prevCharacter, nextCharacter) => {
+                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
+                })
+                .forEach(character => {
+                    const worldName = character.world
+                    const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
+                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
+                })
+        }
+
+        Engine.changePlayer.reloadPlayer = async (characterId) => {
+            const relog = () => {
+                const character = Engine.changePlayer.list[characterId]
+                let date = new Date
+                date.setTime(date.getTime() + 2592e6)
+                const domain = getMainDomain()
+                setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
+                window.location.replace("https://" + character.world + ".margonem." + domain)
+            }
+
+            const accountIds = await rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
+            const accountCharacters = accountIds[accountId]
+
+            if (!accountCharacters.some(chr => chr.id === characterId)) {
+                const hs3Cookie = window.getCookie('hs3')
+                fetch('https://www.margonem.pl/ajax/' + relogType, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    body: `h2=${hs3Cookie}&security=true`,
+                    headers: {
+                        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    },
+                    credentials: 'include',
+                }).then(relog)
+            } else relog()
+        }
+    })()
+
     const loadEnchancementUpgradeLvl = (() => {
         let addonName = 'enhancement-upgrade-lvl'
         if (!checkAddonAvailability(addonName)) return
@@ -1292,132 +1418,6 @@
                 }
             }
         })()
-    })()
-
-    const loadRelogEnhancer = (async () => {
-
-        await waitFor(() => forObject(Engine.changePlayer), 50, 100)
-        await waitFor(() => forObject(Engine.hero.d), 50, 100)
-
-        let addonName = 'relog-enhancer'
-        if (!checkAddonAvailability(addonName)) {
-            return
-        } else if (typeof Engine.changePlayer === 'undefined') {
-            console.error('Engine.changePlayer is undefined')
-            return
-        } else if (typeof Engine.hero.d === 'undefined') {
-            console.error('Engine.hero.d is undefined')
-            return
-        }
-
-        const accountId = Engine.hero.d.account
-        const isGuest = (() => {
-            if (typeof Engine.hero.d.guest !== 'undefined' && Engine.hero.d.guest === '1') {
-                return true
-            } else {
-                return false
-            }
-        })()
-
-        const relogType = isGuest ? 'logout' : 'loginSubstitute'
-
-        if (isGuest) {
-            rojvStorage.addons[addonName].guest = accountId
-        } else {
-            rojvStorage.addons[addonName].main = accountId
-        }
-
-        const mainId = rojvStorage.addons[addonName].main
-        const guestId = rojvStorage.addons[addonName].guest
-
-        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-
-        Engine.changePlayer.createCharacters = () => {
-            let accountCharacterIds = []
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
-
-            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-            const value = accountIds[accountId]
-            if (Array.isArray(value)) {
-                accountCharacterIds = value.map(character => character.id)
-            }
-
-            Object.values(Engine.changePlayer.list)
-                .filter(character => accountCharacterIds.includes(character.id))
-                .sort((prevCharacter, nextCharacter) => {
-                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
-                })
-                .forEach(character => {
-                    const worldName = character.world
-                    const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
-                })
-
-            Object.values(Engine.changePlayer.list)
-                .filter(character => !accountCharacterIds.includes(character.id))
-                .sort((prevCharacter, nextCharacter) => {
-                    return prevCharacter.lvl - nextCharacter.lvl || prevCharacter.nick.localeCompare(nextCharacter.nick)
-                })
-                .forEach(character => {
-                    const worldName = character.world
-                    const createOneCharacter = Engine.changePlayer.createOneCharacter(character)
-                    Engine.changePlayer.characterGroupContainerEl.querySelector(`[data-world=${worldName}]`).appendChild(createOneCharacter)
-                })
-        }
-
-        Engine.changePlayer.reloadPlayer = async (characterId) => {
-            const relog = () => {
-                const character = Engine.changePlayer.list[characterId]
-                let date = new Date
-                date.setTime(date.getTime() + 2592e6)
-                const domain = getMainDomain()
-                setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
-                window.location.replace("https://" + character.world + ".margonem." + domain)
-            }
-
-            const accountIds = await rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-            const accountCharacters = accountIds[accountId]
-
-            if (!accountCharacters.some(chr => chr.id === characterId)) {
-                const hs3Cookie = window.getCookie('hs3')
-                fetch('https://www.margonem.pl/ajax/' + relogType, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    body: `h2=${hs3Cookie}&security=true`,
-                    headers: {
-                        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                    },
-                    credentials: 'include',
-                }).then(relog)
-            } else relog()
-        }
-
-        await waitFor(() => forObject(Engine.changePlayer.onSuccess), 50, 100)
-
-        if (Engine.changePlayer.onSuccess === null) {
-            console.error('Engine.changePlayer.onSuccess is undefined')
-            return
-        }
-
-        Engine.changePlayer.onSuccess = async (listOfCharacters) => {
-            API.Storage.set("charlist/" + accountId, listOfCharacters)
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
-            let charList = []
-            let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
-
-            const idsToCheck = [mainId, guestId].filter(id => id in accountIds)
-            charList = await idsToCheck.reduce((list, id) => [...list, ...accountIds[id]], charList)
-
-            accountIds[accountId] = margonemLocalStorage.charlist[accountId]
-            rojvStorage.addons[addonName].accounts = accountIds
-            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-
-            Engine.changePlayer.prepareList(charList)
-            Engine.changePlayer.createWorldList()
-            Engine.changePlayer.createCharacters()
-            Engine.changePlayer.selectCurrentWorld()
-            Engine.changePlayer.updateScroll()
-        }
     })()
 
     const loadUnlagInvite = (() => {
