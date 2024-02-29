@@ -1319,6 +1319,8 @@
             }
         })()
 
+        const relogType = isGuest ? 'logout' : 'loginSubstitute'
+
         Engine.changePlayer.createCharacters = () => {
             let accountCharacterIds = []
             const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
@@ -1361,7 +1363,6 @@
                 setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
                 window.location.replace("https://" + character.world + ".margonem." + domain)
             }
-            const relogType = isGuest ? 'logout' : 'loginSubstitute'
             let accountCharacters = []
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
