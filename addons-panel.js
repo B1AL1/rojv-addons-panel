@@ -1563,7 +1563,7 @@
         if (!checkAddonAvailability(addonName)) return
 
         const e2LabelImage = new Image()
-        e2LabelImage.src = 'https://i.imgur.com/d8alPfF.png'
+        e2LabelImage.src = 'https://i.imgur.com/rjLCVMz.png'
 
         const amplitude = 4
         const e2GrpSet = new Set()
@@ -1864,8 +1864,8 @@
 
         const wizardLabelImage = new Image()
         const pickaxeLabelImage = new Image()
-        wizardLabelImage.src = 'https://i.imgur.com/9fM26ue.png'
-        pickaxeLabelImage.src = 'https://i.imgur.com/g2ap7uc.png'
+        wizardLabelImage.src = 'https://i.imgur.com/iqfs0Mg.png'
+        pickaxeLabelImage.src = 'https://i.imgur.com/lQRSK8c.png'
 
         const amplitude = 4
         const mineNpcsValueMap = new Map()
