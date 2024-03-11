@@ -1864,8 +1864,8 @@
 
         const wizardLabelImage = new Image()
         const pickaxeLabelImage = new Image()
-        wizardLabelImage.src = 'https://i.imgur.com/iqfs0Mg.png'
-        pickaxeLabelImage.src = 'https://i.imgur.com/lQRSK8c.png'
+        wizardLabelImage.src = 'https://i.imgur.com/3OqBGiC.png'
+        pickaxeLabelImage.src = 'https://i.imgur.com/tmMbvRV.png'
 
         const amplitude = 4
         const mineNpcsValueMap = new Map()
