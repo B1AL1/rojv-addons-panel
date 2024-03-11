@@ -30,6 +30,10 @@
         }
     }
 
+    const addTip = (element, text) => {
+        $(element).tip(text)
+    }
+
     const parseItemStats = (item) => {
         if (typeof item.stat === 'string') {
             item.parsedStats = item.stat.split(';').reduce((acc, curr) => {
@@ -77,21 +81,15 @@
 
     await waitFor(() => forInterface(window.Engine && window.Engine.communication, window.g && window.parseInput), 50, 300)
 
-    const version = '20240213'
-
     let rojvStorage = document.rojvPanel.GM_getValue('rojv-storage')
     if (!rojvStorage) {
         rojvStorage = {
-            addons: {},
-            version: version
+            addons: {}
         }
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
 
-    if (rojvStorage.version != version) {
-        rojvStorage.version = version
-        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-    }
+    const version = '20240311'
 
     const interfaceType = (() => {
         if (typeof Engine != 'undefined') {
@@ -117,51 +115,57 @@
     const addons = {
         'diverse-colors-on-chat': {
             name: 'Diverse Colors On The Chat',
-            description: 'Diverse Colors on the Chat',
+            description: 'Zmienia kolory zlinkowanych przedmiotów na czacie biorąc pod uwagę ich rzadkość. Działa dla podziału łupów, linkowania na czacie oraz na informacje systemowe o otrzymaniu przedmiotu. Jest możliwość konfiguracji kolorów.',
             interface: 'new',
             settings: true
         },
         'enhancement-upgrade-lvl': {
             name: 'Enhancement Upgrade Lvl',
-            description: 'Enhancement Upgrade Lvl',
+            description: 'Dodaje oznaczenia w jakim stopniu jest ulepszony przedmiot. Jest możliwość konfiguracji kolorów.',
             interface: 'new',
             settings: true
         },
         'inform-chat': {
             name: 'Inform Chat',
-            description: 'Inform Chat',
+            description: 'Po wykryciu herosa/tytana/kolosa i podejściu do niego na odległość 12 kratek lub zalogowaniu się w ogległości 12 kratek od niego, wysyła wiadomość na czacie klanowy z informacją o tym jako który w kolejności podszedłeś do potwora na podstawie wiadomości z czatu klanowego. Jeśli jesteśmy 1 obok potworka dodatek wyśle informacje na temat mapy oraz kordów.',
             interface: 'both',
             settings: false
         },
         'relog-enhancer': {
             name: 'Relog Enhancer',
-            description: 'Relog Enhancer',
+            description: 'Dodaje możliwość logania na postacie zasta z poziomu gry przez wbudowane w grę przelogowywanie na inne nasz postacie. Trzeba przynajmniej raz zalogować się na zastępcę żeby pokazały się jego postacie.',
             interface: 'new',
             settings: false
         },
         'unlag-invite': {
             name: 'Unlag Invite',
-            description: 'Unlag Invite',
+            description: 'Dodaje przycisk do zaakceptowania zaproszenia do grupy przy lagu, kiedy okienko z akceptem nie pojawiło się lub QG nie zadziałało. Można dowolnie przesuwać przycisk, jego pozycja zostanie zapisana.',
             interface: 'both',
             settings: false
         },
         'highlight-groups': {
             name: 'Highlight Groups',
-            description: 'Highlight Groups',
+            description: 'Dodaje podświetlenie grupek potworów.',
             interface: 'new',
             settings: false
         },
         'elite-designation': {
             name: 'Elite Designation',
-            description: 'Elite Designation',
+            description: 'Dodaje pływający napis nad e2 oraz jej grupą.',
             interface: 'new',
             settings: false
         },
         'heros-occupation-space': {
             name: 'Heros Occupation Space',
-            description: 'Heros Occupation Space',
+            description: 'Dodaje podświetlenie podłoża w obrębie 5 kratek. Jest możliwość konfiguracji koloru obramowania kratki.',
             interface: 'new',
             settings: true
+        },
+        'mine-helper': {
+            name: 'Mine Helper',
+            description: 'Dodaje pływające napisy nad kilofami i czarodziejami na kopalni 300+ oraz zlicza ich podniesione ilości. Można dowolnie przesuwać licznik, jego pozycja zostanie zapisana.',
+            interface: 'new',
+            settings: false
         }
     }
 
@@ -296,6 +300,8 @@
             label.className = 'rojv-window__label'
             label.innerText = addons[addon].name
             li.appendChild(label)
+
+            addTip(label, addons[addon].description)
 
             if (addons[addon].settings && rojvStorage.addons[addon]?.active == true) {
                 let settings = document.createElement('span')
@@ -664,6 +670,36 @@
 
     window.RojvAPI = {}
 
+    const openRojvAddonPanelNews = () => {
+        const newsWindow = new RojvWindow({
+            width: 600,
+            header: {
+                closeable: true,
+                title: {
+                    text: 'Rojv Addon Menu - Aktualności',
+                    fontSize: 20
+                },
+            },
+            draggable: true,
+            windowType: WindowTypeEnum.Classic
+        })
+
+        const newsList = generateNews()
+
+        const news = document.createElement('li')
+        news.className = 'rojv-news__item'
+        news.innerText = '\nNowy dodatek - Mine Helper.\n\nDodano opisy do dodatków po najechaniu na ich nazwy w panelu dodatków.'
+
+        newsList.appendChild(news)
+        newsWindow.addContent(newsList)
+    }
+
+    if (rojvStorage?.version != version) {
+        rojvStorage.version = version
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        openRojvAddonPanelNews()
+    }
+
     const actionBefore = (obj, key, clb, exArgs = []) => {
         const _method = obj[key]
 
@@ -754,6 +790,10 @@
 
         actionAfter(Engine.showEqManager, 'getEqData', (data) => {
             emitter.emit('showOtherEq', data)
+        })
+
+        actionAfter(Engine.hero, 'sendRequestToTalk', (data) => {
+            emitter.emit('sendRequestToTalk', data)
         })
     })()
 
@@ -1450,6 +1490,8 @@
             rojvStorage.addons[addonName].position = unlagInviteWindow.getPosition()
             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
         })
+
+        addTip(unlagInviteWindow.getContainer(), 'Akceptuj zaproszenie do grupy')
     })()
 
     const loadHighlightGroups = (() => {
@@ -1591,7 +1633,6 @@
             ctx.shadowBlur = 5
             ctx.lineWidth = 2
             ctx.strokeRect(2, 2, 28, 28)
-            ctx.drawImage(borderImage, 0, 0, 32, 32)
 
             return canvas
         })()
@@ -1796,4 +1837,112 @@
 
     })()
 
+    const loadMineHelper = (() => {
+
+        let addonName = 'mine-helper'
+        if (!checkAddonAvailability(addonName)) return
+
+        const position = rojvStorage.addons[addonName].position
+
+        const mineHelperWindow = new RojvWindow({
+            width: 50,
+            draggable: true,
+            windowType: WindowTypeEnum.Clear,
+            managePosition: position ? position : null
+        })
+
+        mineHelperWindow.getContent().innerText = `Zamrożony czarodziej: ${rojvStorage.addons[addonName].wizCount ?? 0}\nPorzucony kilof: ${rojvStorage.addons[addonName].pickCount ?? 0}`
+
+        mineHelperWindow.onChangesPosition(() => {
+            rojvStorage.addons[addonName].position = mineHelperWindow.getPosition()
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        })
+
+        mineHelperWindow.getContainer().style.whiteSpace = 'nowrap'
+
+        addTip(mineHelperWindow.getContainer(), 'Mine Helper')
+
+        const wizardLabelImage = new Image()
+        const pickaxeLabelImage = new Image()
+        wizardLabelImage.src = 'https://i.imgur.com/9fM26ue.png'
+        pickaxeLabelImage.src = 'https://i.imgur.com/g2ap7uc.png'
+
+        const amplitude = 4
+        const mineNpcsValueMap = new Map()
+
+        const pickaxeName = 'Porzucony kilof'
+        const wizardName = 'Zamrożony czarodziej'
+
+        const lastMineDate = new Date(rojvStorage.addons[addonName].lastMineDate ?? 0)
+        const todayDate = new Date()
+
+        if (todayDate.getDay() === 1 && lastMineDate.toLocaleDateString() !== todayDate.toLocaleDateString()) {
+            rojvStorage.addons[addonName].wizCount = 0
+            rojvStorage.addons[addonName].pickCount = 0
+            rojvStorage.addons[addonName].lastMineDate = todayDate.getTime()
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        }
+
+        const wizCount = rojvStorage.addons[addonName].wizCount ?? 0
+        const pickCount = rojvStorage.addons[addonName].pickCount ?? 0
+
+        class DrawMineLabel {
+            constructor(npc) {
+                const { d: { id, nick }, rx, ry, fw } = npc
+                if (nick !== pickaxeName && nick !== wizardName) return
+
+                this.rx = rx
+                this.ry = ry
+
+                this.draw = (ctx) => {
+                    const [offsetX, offsetY] = Engine.map.offset
+                    const [left, top] = npc.collider?.box || [0, 0]
+                    const posLeft = left - offsetX
+                    const posTop = top - offsetY
+
+                    let npcValue = mineNpcsValueMap.get(id) ?? { positionY: 0, velocityY: 0.1 }
+                    let { positionY, velocityY } = npcValue
+
+                    positionY += velocityY
+
+                    if (positionY > amplitude || positionY < -amplitude) {
+                        velocityY = -velocityY
+                    }
+                    mineNpcsValueMap.set(id, { positionY, velocityY, nick })
+
+                    if (nick === pickaxeName) {
+                        ctx.drawImage(pickaxeLabelImage, posLeft + fw / 2 - 32, posTop - 24 + positionY, 64, 22)
+                    } else if (nick === wizardName) {
+                        ctx.drawImage(wizardLabelImage, posLeft + fw / 2 - 16, posTop - 30 + positionY, 64, 28)
+                    }
+                }
+                this.getOrder = () => 100
+            }
+        }
+        const getDrawableListMineLabel = (npcs) => Object.values(npcs).map(npc => new DrawMineLabel(npc))
+        API.addCallbackToEvent('call_draw_add_to_renderer', () => Engine.renderer.add(...getDrawableListMineLabel(Engine.npcs.check())))
+
+        API.addCallbackToEvent('removeNpc', (npc) => {
+            mineNpcsValueMap.delete(npc.d.id)
+        })
+
+        API.addCallbackToEvent('newNpc', (npc) => {
+            if (npc.d.nick === pickaxeName || npc.d.nick === wizardName) {
+                mineNpcsValueMap.set(npc.d.id, { positionY: 0, velocityY: 0.1, nick: npc.d.nick })
+            }
+        })
+
+        RojvAPI.emitter.on('sendRequestToTalk', (id) => {
+            const npc = mineNpcsValueMap.get(id)
+            if (npc) {
+                if (npc.nick === pickaxeName) {
+                    rojvStorage.addons[addonName].pickCount = pickCount + 1
+                } else if (npc.nick === wizardName) {
+                    rojvStorage.addons[addonName].wizCount = wizCount + 1
+                }
+                mineHelperWindow.getContent().innerText = `Zamrożony czarodziej: ${rojvStorage.addons[addonName].wizCount}\nPorzucony kilof: ${rojvStorage.addons[addonName].pickCount}`
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+            }
+        })
+    })()
 })()
