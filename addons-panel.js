@@ -1563,7 +1563,7 @@
         if (!checkAddonAvailability(addonName)) return
 
         const e2LabelImage = new Image()
-        e2LabelImage.src = 'https://i.imgur.com/rjLCVMz.png'
+        e2LabelImage.src = 'https://i.imgur.com/d8alPfF.png'
 
         const amplitude = 4
         const e2GrpSet = new Set()
