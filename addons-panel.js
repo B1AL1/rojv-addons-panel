@@ -89,7 +89,7 @@
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
 
-    const version = '20240311'
+    const version = '20240314'
 
     const interfaceType = (() => {
         if (typeof Engine != 'undefined') {
@@ -141,7 +141,8 @@
             name: 'Unlag Invite',
             description: 'Dodaje przycisk do zaakceptowania zaproszenia do grupy przy lagu, kiedy okienko z akceptem nie pojawiło się lub QG nie zadziałało. Można dowolnie przesuwać przycisk, jego pozycja zostanie zapisana.',
             interface: 'both',
-            settings: false
+            settings: false,
+            position: true
         },
         'highlight-groups': {
             name: 'Highlight Groups',
@@ -163,10 +164,18 @@
         },
         'mine-helper': {
             name: 'Mine Helper',
-            description: 'Dodaje pływające napisy nad kilofami i czarodziejami na kopalni 300+ oraz zlicza ich podniesione ilości. Można dowolnie przesuwać licznik, jego pozycja zostanie zapisana.',
+            description: 'Dodaje pływające napisy nad kilofami i czarodziejami na kopalni 300+ oraz zlicza ilośc ich podmiesień. Można dowolnie przesuwać licznik, jego pozycja zostanie zapisana.',
             interface: 'new',
-            settings: false
-        }
+            settings: false,
+            position: true
+        },
+        'timers-box': {
+            name: 'Timers Box',
+            description: 'Dodaje pływający box z timerami lootlogów. Aby okienka poprawnie się zawijały należy ustawić ilość kolumn na 1 w ustawieniach lootloga. Można dowolnie przesuwać oraz zmieniać rozmiar boxa, jego pozycja oraz wymiary zostaną zapisane. Działa dla wielu lootlogów',
+            interface: 'both',
+            settings: false,
+            position: true
+        },
     }
 
     const defaultConfig = {
@@ -303,10 +312,28 @@
 
             addTip(label, addons[addon].description)
 
+            if (addons[addon].position && rojvStorage.addons[addon]?.active) {
+                let resetPosition = document.createElement('span')
+                resetPosition.className = 'rojv-control rojv-control--reset_position'
+                resetPosition.innerText = '🔄'
+                resetPosition.style.marginLeft = 'auto'
+                if (!addons[addon].settings) resetPosition.style.marginRight = '8px'
+                resetPosition.addEventListener('click', () => {
+                    rojvStorage.addons[addon].position = null
+                    document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                    message('Pozycja została zresetowana, odśwież stronę aby zobaczyć zmiany.')
+                })
+                li.appendChild(resetPosition)
+                addTip(resetPosition, 'Przywróć domyślną pozycję')
+            }
+
             if (addons[addon].settings && rojvStorage.addons[addon]?.active == true) {
                 let settings = document.createElement('span')
                 settings.className = 'rojv-control rojv-control--settings'
                 settings.innerText = '⚙️'
+                if (addons[addon].position) settings.style.marginLeft = '3px'
+                else settings.style.marginLeft = 'auto'
+                settings.style.marginRight = '8px'
                 settings.addEventListener('click', () => {
                     let existingSettingsWindow = document.querySelector(`.${addon}`)
                     if (existingSettingsWindow) {
@@ -386,8 +413,8 @@
                         settingsList.appendChild(li)
                     }
                     settingsWindow.addContent(settingsList)
-                }
-                )
+                })
+                addTip(settings, 'Ustawienia')
                 li.appendChild(settings)
             }
 
@@ -422,6 +449,49 @@
 
         newsList.appendChild(profile)
 
+        const newsObjects = [
+            {
+                date: '14.03.2024',
+                content: [
+                    'Nowy dodatek - Timers Box.',
+                    'Przebudowano funkcjonalność przesuwania okienek dodatków.',
+                    'Dodano funkcjonalność zmiany rozmiaru niektórych okienek.',
+                    'Dodano możliwość resetowania pozycji okienka dodatku.',
+                    'Dodano zapamiętywanie czy panel dodatków jest włączony, po odświeżeniu okna powinien on się od razu pojawić jęśli był wcześniej aktywny.'
+                ]
+            },
+            {
+                date: '11.03.2024',
+                content: [
+                    'Nowy dodatek - Mine Helper.',
+                    'Dodano opisy do dodatków po najechaniu na ich nazwy w panelu dodatków.'
+                ]
+            }
+        ]
+
+        newsObjects.forEach((newsObject) => {
+            let news = document.createElement('li')
+            news.className = 'rojv-news__item'
+
+            let newsInnerList = document.createElement('ul')
+            newsInnerList.className = 'rojv-news__list'
+
+            let date = document.createElement('li')
+            date.className = 'rojv-news__item'
+            date.innerHTML = `<b>${newsObject.date}</b>`
+            newsInnerList.appendChild(date)
+
+            newsObject.content.forEach((content) => {
+                let contentItem = document.createElement('li')
+                contentItem.className = 'rojv-news__item'
+                contentItem.innerText = content
+                newsInnerList.appendChild(contentItem)
+            })
+
+            news.appendChild(newsInnerList)
+            newsList.appendChild(news)
+        })
+
         return newsList
     }
 
@@ -443,20 +513,28 @@
         settings: { name: 'Ustawienia', content: generateSettings(), isFooter: false }
     }
 
+    const mainContainer = document.createElement('div')
+    mainContainer.id = 'rojv-addon-panel'
+    mainContainer.className = 'default-cursor'
+    document.body.appendChild(mainContainer)
+
     class RojvWindow {
         constructor({
             windowType = WindowTypeEnum.Classic,
             windowClass,
-            width = 400,
+            size = { width: 300, height: 0 },
             header,
-            parentElement = document.body,
+            parentElement = mainContainer,
             managePosition,
-            draggable,
+            draggable = false,
             footer,
-            navigationItems
+            navigationItems,
+            resizable = false
         } = {}) {
             this.container = this.createElement('div', windowType, windowClass)
-            this.container.style.width = `${width}px`
+
+            this.container.style.width = `${size.width}px`
+            if (size.height > 0) this.container.style.height = `${size.height}px`
 
             this.header = this.createElement('div', 'rojv-window__header')
             this.menuLeft = this.createElement('div', 'rojv-window__menu')
@@ -472,14 +550,38 @@
 
             parentElement.appendChild(this.container)
 
-            if (managePosition) {
-                this.container.style.left = `${managePosition.x}px`
-                this.container.style.top = `${managePosition.y}px`
-            }
-
             if (draggable) {
                 let draggableElement = header?.title ? this.title : this.closeable ? this.header : this.content
-                this.makeDraggable(draggableElement)
+                $(this.container).draggable(
+                    {
+                        handle: draggableElement,
+                        cancel: false,
+                        scroll: false,
+                        start: () => {
+                            draggableElement.classList.add('active')
+                        },
+                        stop: () => {
+                            draggableElement.classList.remove('active')
+                        },
+                        drag: (event, ui) => {
+                            const containerOffset = this.container.getBoundingClientRect()
+
+                            const topOffset = 0
+
+                            if (ui.position.top < topOffset) {
+                                ui.position.top = topOffset
+                            } else if (ui.position.top + this.container.offsetHeight > window.innerHeight + topOffset) {
+                                ui.position.top = window.innerHeight - this.container.offsetHeight + topOffset
+                            }
+
+                            if (ui.position.left < 0) {
+                                ui.position.left = 0
+                            } else if (ui.position.left + this.container.offsetWidth > window.innerWidth) {
+                                ui.position.left = window.innerWidth - this.container.offsetWidth
+                            }
+                        }
+                    }
+                )
             }
 
             if (footer?.buttons) {
@@ -488,50 +590,23 @@
                 }
             }
 
-            if (navigationItems) this.navigation = this.generateNavigation(navigationItems)
-        }
+            if (navigationItems) this.generateNavigation(navigationItems)
 
-        makeDraggable(draggableElement) {
-            this.isMoving = false
-            let halfElementWidth, halfElementHeight
-
-            const handleDrag = (event) => {
-                if (!this.isMoving) return
-
-                const { movementX, movementY, target: { offsetParent: element } } = event
-                const maxLeft = window.innerWidth - halfElementWidth
-                let left = parseFloat(window.getComputedStyle(element).left)
-                let top = parseFloat(window.getComputedStyle(element).top)
-
-                if (left + movementX > halfElementWidth && left + movementX < maxLeft) {
-                    element.style.left = `${left + movementX}px`
-                }
-                if (top + movementY > halfElementHeight && top + movementY < window.innerHeight - halfElementHeight) {
-                    element.style.top = `${top + movementY}px`
-                }
+            if (resizable) {
+                this.container.classList.add('rojv-window--resizable')
+                this.content.addEventListener('wheel', (event) => {
+                    event.stopPropagation()
+                })
+                this.content.classList.add('rojv-window__content--resizable')
             }
 
-            const startDrag = () => {
-                this.isMoving = true
-                draggableElement.classList.add('active')
-
-                const getStyle = window.getComputedStyle(this.container)
-                const elementWidth = parseFloat(getStyle.width) + parseFloat(getStyle.paddingLeft) + parseFloat(getStyle.paddingRight) + parseFloat(getStyle.borderLeftWidth) + parseFloat(getStyle.borderRightWidth)
-                const elementHeight = parseFloat(getStyle.height) + parseFloat(getStyle.paddingTop) + parseFloat(getStyle.paddingBottom) + parseFloat(getStyle.borderTopWidth) + parseFloat(getStyle.borderBottomWidth)
-                halfElementWidth = elementWidth / 2
-                halfElementHeight = elementHeight / 2
+            if (managePosition) {
+                this.container.style.left = `${managePosition.x}px`
+                this.container.style.top = `${managePosition.y}px`
+            } else {
+                this.container.style.left = `${(window.innerWidth - this.container.offsetWidth) / 2}px`
+                this.container.style.top = `${(window.innerHeight - this.container.offsetHeight) / 2}px`
             }
-            const stopDrag = () => {
-                this.isMoving = false
-                draggableElement.classList.remove('active')
-            }
-
-            this.draggableElementListeners = { startDrag, handleDrag, stopDrag }
-
-            draggableElement.addEventListener('mousedown', startDrag)
-            draggableElement.addEventListener('mousemove', handleDrag)
-            draggableElement.addEventListener('mouseup', stopDrag)
-            draggableElement.addEventListener('mouseleave', stopDrag)
         }
 
         createElement(tag, className, additionalClass) {
@@ -566,10 +641,11 @@
             return true
         }
 
-        createButton({ text, onClick }) {
+        createButton({ text, onClick, tip }) {
             let buttonElement = this.createElement('button', 'rojv-control rojv-control--button')
             buttonElement.innerText = text
             buttonElement.addEventListener('click', onClick.bind(this))
+            if (tip) addTip(buttonElement, tip)
             return buttonElement
         }
 
@@ -581,11 +657,20 @@
             this.content.appendChild(element)
         }
 
+        addHeader(element) {
+            this.header.insertBefore(element, this.menuRight)
+        }
+
         setWidth(width) {
             this.container.style.width = `${width}px`
         }
 
         onClose() {
+            let windowId = this.container.id
+            if (windowId === 'rojv-addon-panel-window') {
+                rojvStorage.isAddonPanelOpen = false
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+            }
             this.container.remove()
         }
 
@@ -628,25 +713,39 @@
             }
         }
 
+        getSize() {
+            return {
+                width: parseInt(this.container.style.width),
+                height: parseInt(this.container.style.height)
+            }
+        }
+
         onChangesPosition(callback) {
             this.container.addEventListener('mouseup', () => {
                 callback(this.getPosition())
             })
         }
 
+        onChangesSize(callback) {
+            this.container.addEventListener('mouseup', () => {
+                callback(this.getSize())
+            })
+        }
+
         generateNavigation(navigationItems) {
-            const navigation = this.createElement('div', 'rojv-addons__navigation')
-            this.container.insertBefore(navigation, this.content)
+            this.navigation = this.createElement('div', 'rojv-addons__navigation')
+            this.container.insertBefore(this.navigation, this.content)
             for (let item in navigationItems) {
                 let navigationItem = this.createElement('div', 'rojv-addons__navigation__item', navigationItems[item].name)
                 navigationItem.innerText = navigationItems[item].name
+                navigationItem.id = item
                 if (navigationItems[item].active) navigationItem.classList.add('rojv-addons__navigation__item--active')
 
                 navigationItem.addEventListener('click', () => {
                     if (navigationItems[item].active) return
                     for (let item in navigationItems) {
                         navigationItems[item].active = false
-                        navigation.querySelectorAll(`.rojv-addons__navigation__item--active`).forEach(
+                        this.navigation.querySelectorAll(`.rojv-addons__navigation__item--active`).forEach(
                             (element) => element.classList.remove('rojv-addons__navigation__item--active')
                         )
                     }
@@ -659,12 +758,24 @@
 
                     this.getFooter().style.display = navigationItems[item].isFooter ? 'flex' : 'none'
                 })
-                navigation.appendChild(navigationItem)
+                this.navigation.appendChild(navigationItem)
 
                 if (navigationItems[item].active) this.addContent(navigationItems[item].content)
             }
 
-            return navigation
+            return this.navigation
+        }
+
+        getNavigation() {
+            return this.navigation
+        }
+
+        getNavigationItem(id) {
+            return this.navigation.querySelector(`#${id}`)
+        }
+
+        getNavigationItems() {
+            return this.navigation.querySelectorAll('.rojv-addons__navigation__item')
         }
     }
 
@@ -672,7 +783,7 @@
 
     const openRojvAddonPanelNews = () => {
         const newsWindow = new RojvWindow({
-            width: 600,
+            size: { width: 600, height: 300 },
             header: {
                 closeable: true,
                 title: {
@@ -686,11 +797,13 @@
 
         const newsList = generateNews()
 
-        const news = document.createElement('li')
-        news.className = 'rojv-news__item'
-        news.innerText = '\nNowy dodatek - Mine Helper.\n\nDodano opisy do dodatków po najechaniu na ich nazwy w panelu dodatków.'
+        newsWindow.getContent().classList.add('rojv-window__content--resizable')
+        newsWindow.getContent().style.height = parseInt(newsWindow.getContainer().style.height) - newsWindow.getHeader().offsetHeight - newsWindow.getFooter().offsetHeight + 'px'
+        newsWindow.getContent().style.paddingRight = '10px'
+        newsWindow.getContent().addEventListener('wheel', (event) => {
+            event.stopPropagation()
+        })
 
-        newsList.appendChild(news)
         newsWindow.addContent(newsList)
     }
 
@@ -766,9 +879,9 @@
 
     const emitEvents = (data, before) => {
         for (let i in data) {
-            emitter.emit((before ? "before-" : "") + i, data[i])
+            emitter.emit((before ? 'before-' : '') + i, data[i])
         }
-        emitter.emit((before ? "before-" : "") + "game-response", data)
+        emitter.emit((before ? 'before-' : '') + 'game-response', data)
     }
 
     const requestParserNI = (() => {
@@ -834,8 +947,10 @@
         list.classList.add('hero-options')
         list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
         list.addEventListener('click', () => {
-            if (document.querySelector('.rojv-window')) {
-                document.querySelectorAll('.rojv-window').forEach((element) => element.remove())
+            if (document.querySelector('#rojv-addon-panel-window')) {
+                document.querySelectorAll('#rojv-addon-panel-window').forEach((element) => element.remove())
+                rojvStorage.isAddonPanelOpen = false
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
                 return
             }
             openRojvAddonPanel()
@@ -846,7 +961,7 @@
 
     const openRojvAddonPanel = () => {
         const mainWindow = new RojvWindow({
-            width: 900,
+            size: { width: 900, height: 0 },
             header: {
                 closeable: true,
                 title: {
@@ -862,31 +977,39 @@
                         text: 'Zapisz',
                         onClick: () => {
                             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-                        }
+                        },
+                        tip: 'Zapisz ustawienia dodatków'
                     },
                     {
                         text: 'Odśwież',
                         onClick: () => {
                             location.reload()
-                        }
+                        },
+                        tip: 'Odśwież stronę'
                     }
                 ]
             },
             navigationItems: mainWindowNavigationItems
         })
+
+        mainWindow.getContainer().id = 'rojv-addon-panel-window'
+
+        rojvStorage.isAddonPanelOpen = true
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
 
     window.RojvAPI.openRojvAddonPanel = openRojvAddonPanel
 
+    if (rojvStorage?.isAddonPanelOpen) openRojvAddonPanel()
+
     const loadRelogEnhancer = (async () => {
+
+        let addonName = 'relog-enhancer'
+        if (!checkAddonAvailability(addonName)) return
 
         await waitFor(() => forObject(Engine.changePlayer), 50, 100)
         await waitFor(() => forObject(Engine.hero.d), 50, 100)
-
-        let addonName = 'relog-enhancer'
-        if (!checkAddonAvailability(addonName)) {
-            return
-        } else if (typeof Engine.changePlayer === 'undefined') {
+        if (typeof Engine.changePlayer === 'undefined') {
             console.error('Engine.changePlayer is undefined')
             return
         } else if (typeof Engine.hero.d === 'undefined') {
@@ -922,8 +1045,8 @@
 
         Engine.changePlayer.onSuccess = (listOfCharacters) => {
             const accountId = Engine.hero.d.account
-            API.Storage.set("charlist/" + accountId, listOfCharacters)
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            API.Storage.set('charlist/' + accountId, listOfCharacters)
+            const margonemLocalStorage = JSON.parse(localStorage.getItem('Margonem'))
             let charList = []
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
 
@@ -944,7 +1067,7 @@
         Engine.changePlayer.createCharacters = () => {
             const accountId = Engine.hero.d.account
             let accountCharacterIds = []
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            const margonemLocalStorage = JSON.parse(localStorage.getItem('Margonem'))
 
             let accountIds = rojvStorage.addons[addonName]?.accounts ? rojvStorage.addons[addonName].accounts : margonemLocalStorage.charlist
             const value = accountIds[accountId]
@@ -981,10 +1104,10 @@
                 let date = new Date
                 date.setTime(date.getTime() + 2592e6)
                 const domain = getMainDomain()
-                setCookie("mchar_id", characterId, date, "/", "margonem." + domain, !0)
-                window.location.replace("https://" + character.world + ".margonem." + domain)
+                setCookie('mchar_id', characterId, date, '/', 'margonem.' + domain, !0)
+                window.location.replace('https://' + character.world + '.margonem.' + domain)
             }
-            const margonemLocalStorage = JSON.parse(localStorage.getItem("Margonem"))
+            const margonemLocalStorage = JSON.parse(localStorage.getItem('Margonem'))
             const accountId = Engine.hero.d.account
 
             const relogType = typeof Engine.hero.d.guest !== 'undefined' && Engine.hero.d.guest === '1' ? 'logout' : 'loginSubstitute'
@@ -1017,7 +1140,7 @@
             canvas.width = 32
             canvas.height = 32
             const ctx = canvas.getContext('2d')
-            ctx.shadowColor = "black"
+            ctx.shadowColor = 'black'
             ctx.shadowBlur = 2
             ctx.lineWidth = 3
             ctx.strokeText(`+${lvl}`, 18, 10)
@@ -1475,7 +1598,7 @@
         const position = rojvStorage.addons[addonName].position
 
         const unlagInviteWindow = new RojvWindow({
-            width: 50,
+            size: { width: 50, height: 0 },
             draggable: true,
             windowType: WindowTypeEnum.Clear,
             managePosition: position ? position : null
@@ -1491,7 +1614,7 @@
             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
         })
 
-        addTip(unlagInviteWindow.getContainer(), 'Akceptuj zaproszenie do grupy')
+        addTip(unlagInviteWindow.getContent(), 'Akceptuj zaproszenie do grupy')
     })()
 
     const loadHighlightGroups = (() => {
@@ -1845,7 +1968,7 @@
         const position = rojvStorage.addons[addonName].position
 
         const mineHelperWindow = new RojvWindow({
-            width: 50,
+            size: { width: 50, height: 0 },
             draggable: true,
             windowType: WindowTypeEnum.Clear,
             managePosition: position ? position : null
@@ -1944,5 +2067,113 @@
                 document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
             }
         })
+    })()
+
+    const loadTimersBox = (async () => {
+
+        let addonName = 'timers-box'
+        if (!checkAddonAvailability(addonName)) return
+
+        if (interfaceType === 'new') {
+            await waitFor(() => forObject(Engine.allInit), 50, 100)
+        } else if (interfaceType === 'old') {
+            await waitFor(() => forObject(g.init > 4), 50, 100)
+        }
+
+        let timers = document.getElementsByClassName('cll-timers')
+        if (timers.length == 0) {
+            console.error('Timers not found')
+            return
+        }
+
+        const position = rojvStorage.addons[addonName].position
+        const size = rojvStorage.addons[addonName].size
+        let lastSelected = rojvStorage.addons[addonName].lastSelected
+
+        const timersBoxWindow = new RojvWindow({
+            size: size ? size : { width: 100, height: 0 },
+            draggable: true,
+            windowType: WindowTypeEnum.Classic,
+            managePosition: position ? position : null,
+            resizable: true,
+            header: {
+                title: {
+                    text: 'Timers Box',
+                    fontSize: '12px'
+                }
+            }
+        })
+
+        const changeContentHeight = () => {
+            timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight + 'px'
+            if (timersBoxWindow.getNavigation()) {
+                timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight - timersBoxWindow.getNavigation().offsetHeight + 'px'
+            }
+        }
+
+        timersBoxWindow.onChangesPosition(() => {
+            rojvStorage.addons[addonName].position = timersBoxWindow.getPosition()
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        })
+
+        timersBoxWindow.onChangesSize(() => {
+            changeContentHeight()
+            rojvStorage.addons[addonName].size = timersBoxWindow.getSize()
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        })
+
+        timersBoxWindow.getContainer().style.padding = '2px 2px 10px 2px'
+
+        addTip(timersBoxWindow.getHeader(), 'Timers Box')
+
+        const timersBoxContent = timersBoxWindow.getContent()
+
+        const lootlogs = new Map()
+
+        for (let i = 0; i < timers.length; i++) {
+            let timer = timers[i]
+            $(timer).trigger('mouseenter')
+            $(timer).draggable('disable')
+            Object.assign(timer.style, {
+                'position': 'static',
+                'margin-top': '3px',
+                'margin-left': '1px',
+                'margin-right': '1px',
+                'max-width': '100%',
+            })
+            var css = timer.getAttribute('style')
+            timer.setAttribute('style', css.replace('static;', 'static !important;'))
+            let name = timer.getAttribute('id').split('cll-timers-')[1].replace(/_/g, ' ')
+            lootlogs.set(name, timer)
+        }
+
+        if (lootlogs.size === 1) {
+            timersBoxContent.appendChild([...lootlogs.values()][0])
+        } else {
+            let navigationItems = {}
+            lastSelected = lootlogs.keys().some((key) => { key === lastSelected }) ? lastSelected : [...lootlogs.keys()][0]
+            lootlogs.forEach((value, key) => {
+                navigationItems[key] = { name: key.toUpperCase(), content: value, isFooter: false }
+                if (key === lastSelected) {
+                    navigationItems[key].active = true
+                    rojvStorage.addons[addonName].lastSelected = key
+                    document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                }
+            })
+            let navigation = timersBoxWindow.generateNavigation(navigationItems)
+            navigation.style.marginTop = '0'
+            let navigationItemsList = timersBoxWindow.getNavigationItems()
+            navigationItemsList.forEach((item) => {
+                let itemId = item.getAttribute('id')
+                item.addEventListener('click', () => {
+                    if (lastSelected !== itemId) {
+                        lastSelected = itemId
+                        rojvStorage.addons[addonName].lastSelected = itemId
+                        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                    }
+                })
+            })
+        }
+        changeContentHeight()
     })()
 })()
