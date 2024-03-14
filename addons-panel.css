@@ -255,7 +255,7 @@
 }
 
 .rojv-window__content--resizable {
-	overflow: hidden auto;
+	overflow: hidden scroll;
 	height: 100%;
 }
 
