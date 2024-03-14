@@ -89,7 +89,7 @@
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
 
-    const version = '20240314'
+    const version = '20240314-2'
 
     const interfaceType = (() => {
         if (typeof Engine != 'undefined') {
@@ -105,7 +105,6 @@
         }
         return false
     }
-
 
     const WindowTypeEnum = {
         Classic: 'rojv-window',
@@ -454,6 +453,7 @@
                 date: '14.03.2024',
                 content: [
                     'Nowy dodatek - Timers Box.',
+                    'Dodano przycisk do włączania panelu dodatków dla REVO.',
                     'Przebudowano funkcjonalność przesuwania okienek dodatków.',
                     'Dodano funkcjonalność zmiany rozmiaru niektórych okienek.',
                     'Dodano możliwość resetowania pozycji okienka dodatku.',
@@ -812,6 +812,36 @@
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
         openRojvAddonPanelNews()
     }
+
+    let revo = null
+    let revoRetryCount = 300
+    const fetchRevo = () => {
+        revo = document.querySelector('#revolayer')
+        if (!revo && revoRetryCount > 0) {
+            revoRetryCount -= 1
+            setTimeout(fetchRevo, 50)
+        } else if (!revo && revoRetryCount == 0) {
+            console.error('Nie znaleziono revo')
+        } else {
+            let tray = revo.querySelector('._tray_')
+            let revoButton = document.createElement('cr-button')
+            revoButton.setAttribute('revo_tip', `<b>Rojv Addon Menu</b><br>Pokaż/ukryj okno dodatków Rojva.`)
+            revoButton.classList.add('info')
+            revoButton.innerHTML = 'ROJV'
+            revoButton.addEventListener('click', () => {
+                if (document.querySelector('#rojv-addon-panel-window')) {
+                    document.querySelectorAll('#rojv-addon-panel-window').forEach((element) => element.remove())
+                    rojvStorage.isAddonPanelOpen = false
+                    document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                    return
+                }
+                openRojvAddonPanel()
+            })
+            tray.insertBefore(revoButton, tray.lastChild)
+        }
+    }
+
+    fetchRevo()
 
     const actionBefore = (obj, key, clb, exArgs = []) => {
         const _method = obj[key]
