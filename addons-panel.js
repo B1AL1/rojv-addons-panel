@@ -2104,106 +2104,112 @@
         let addonName = 'timers-box'
         if (!checkAddonAvailability(addonName)) return
 
-        if (interfaceType === 'new') {
-            await waitFor(() => forObject(Engine.allInit), 50, 100)
-        } else if (interfaceType === 'old') {
-            await waitFor(() => forObject(g.init > 4), 50, 100)
-        }
-
-        let timers = document.getElementsByClassName('cll-timers')
-        if (timers.length == 0) {
-            console.error('Timers not found')
-            return
-        }
-
-        const position = rojvStorage.addons[addonName].position
-        const size = rojvStorage.addons[addonName].size
-        let lastSelected = rojvStorage.addons[addonName].lastSelected
-
-        const timersBoxWindow = new RojvWindow({
-            size: size ? size : { width: 100, height: 300 },
-            draggable: true,
-            windowType: WindowTypeEnum.Classic,
-            managePosition: position ? position : null,
-            resizable: true,
-            header: {
-                title: {
-                    text: 'Timers Box',
-                    fontSize: '12px'
-                }
-            }
-        })
-
-        const changeContentHeight = () => {
-            timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight + 'px'
-            if (timersBoxWindow.getNavigation()) {
-                timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight - timersBoxWindow.getNavigation().offsetHeight + 'px'
+        let timers = null
+        let timersRetryCount = 300
+        const fetchTimers = () => {
+            timers = document.getElementsByClassName('cll-timers')
+            if (!timers.length && timersRetryCount > 0) {
+                timersRetryCount -= 1
+                setTimeout(fetchTimers, 50)
+            } else if (!timers.length && timersRetryCount == 0) {
+                console.error('Nie znaleziono timerów')
+            } else {
+                loadTimers()
             }
         }
 
-        timersBoxWindow.onChangesPosition(() => {
-            rojvStorage.addons[addonName].position = timersBoxWindow.getPosition()
-            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-        })
+        const loadTimers = () => {
+            const position = rojvStorage.addons[addonName].position
+            const size = rojvStorage.addons[addonName].size
+            let lastSelected = rojvStorage.addons[addonName].lastSelected
 
-        timersBoxWindow.onChangesSize(() => {
-            changeContentHeight()
-            rojvStorage.addons[addonName].size = timersBoxWindow.getSize()
-            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-        })
-
-        timersBoxWindow.getContainer().style.padding = '2px 2px 10px 2px'
-
-        addTip(timersBoxWindow.getHeader(), 'Timers Box')
-
-        const timersBoxContent = timersBoxWindow.getContent()
-
-        const lootlogs = new Map()
-
-        for (let i = 0; i < timers.length; i++) {
-            let timer = timers[i]
-            $(timer).trigger('mouseenter')
-            $(timer).draggable('disable')
-            Object.assign(timer.style, {
-                'position': 'static',
-                'margin-top': '3px',
-                'margin-left': '1px',
-                'margin-right': '1px',
-                'max-width': '100%',
-            })
-            var css = timer.getAttribute('style')
-            timer.setAttribute('style', css.replace('static;', 'static !important;'))
-            let name = timer.getAttribute('id').split('cll-timers-')[1].replace(/_/g, ' ')
-            lootlogs.set(name, timer)
-        }
-
-        if (lootlogs.size === 1) {
-            timersBoxContent.appendChild([...lootlogs.values()][0])
-        } else {
-            let navigationItems = {}
-            lastSelected = lootlogs.keys().some((key) => { key === lastSelected }) ? lastSelected : [...lootlogs.keys()][0]
-            lootlogs.forEach((value, key) => {
-                navigationItems[key] = { name: key.toUpperCase(), content: value, isFooter: false }
-                if (key === lastSelected) {
-                    navigationItems[key].active = true
-                    rojvStorage.addons[addonName].lastSelected = key
-                    document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+            const timersBoxWindow = new RojvWindow({
+                size: size ? size : { width: 100, height: 300 },
+                draggable: true,
+                windowType: WindowTypeEnum.Classic,
+                managePosition: position ? position : null,
+                resizable: true,
+                header: {
+                    title: {
+                        text: 'Timers Box',
+                        fontSize: '12px'
+                    }
                 }
             })
-            let navigation = timersBoxWindow.generateNavigation(navigationItems)
-            navigation.style.marginTop = '0'
-            let navigationItemsList = timersBoxWindow.getNavigationItems()
-            navigationItemsList.forEach((item) => {
-                let itemId = item.getAttribute('id')
-                item.addEventListener('click', () => {
-                    if (lastSelected !== itemId) {
-                        lastSelected = itemId
-                        rojvStorage.addons[addonName].lastSelected = itemId
+
+            const changeContentHeight = () => {
+                timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight + 'px'
+                if (timersBoxWindow.getNavigation()) {
+                    timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight - timersBoxWindow.getNavigation().offsetHeight + 'px'
+                }
+            }
+
+            timersBoxWindow.onChangesPosition(() => {
+                rojvStorage.addons[addonName].position = timersBoxWindow.getPosition()
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+            })
+
+            timersBoxWindow.onChangesSize(() => {
+                changeContentHeight()
+                rojvStorage.addons[addonName].size = timersBoxWindow.getSize()
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+            })
+
+            timersBoxWindow.getContainer().style.padding = '2px 2px 10px 2px'
+
+            addTip(timersBoxWindow.getHeader(), 'Timers Box')
+
+            const timersBoxContent = timersBoxWindow.getContent()
+
+            const lootlogs = new Map()
+
+            for (let i = 0; i < timers.length; i++) {
+                let timer = timers[i]
+                $(timer).trigger('mouseenter')
+                $(timer).draggable('disable')
+                Object.assign(timer.style, {
+                    'position': 'static',
+                    'margin-top': '3px',
+                    'margin-left': '1px',
+                    'margin-right': '1px',
+                    'max-width': '100%',
+                })
+                var css = timer.getAttribute('style')
+                timer.setAttribute('style', css.replace('static;', 'static !important;'))
+                let name = timer.getAttribute('id').split('cll-timers-')[1].replace(/_/g, ' ')
+                lootlogs.set(name, timer)
+            }
+
+            if (lootlogs.size === 1) {
+                timersBoxContent.appendChild([...lootlogs.values()][0])
+            } else {
+                let navigationItems = {}
+                lastSelected = lootlogs.keys().some((key) => { key === lastSelected }) ? lastSelected : [...lootlogs.keys()][0]
+                lootlogs.forEach((value, key) => {
+                    navigationItems[key] = { name: key.toUpperCase(), content: value, isFooter: false }
+                    if (key === lastSelected) {
+                        navigationItems[key].active = true
+                        rojvStorage.addons[addonName].lastSelected = key
                         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
                     }
                 })
-            })
+                let navigation = timersBoxWindow.generateNavigation(navigationItems)
+                navigation.style.marginTop = '0'
+                let navigationItemsList = timersBoxWindow.getNavigationItems()
+                navigationItemsList.forEach((item) => {
+                    let itemId = item.getAttribute('id')
+                    item.addEventListener('click', () => {
+                        if (lastSelected !== itemId) {
+                            lastSelected = itemId
+                            rojvStorage.addons[addonName].lastSelected = itemId
+                            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                        }
+                    })
+                })
+            }
+            changeContentHeight()
         }
-        changeContentHeight()
+
+        fetchTimers()
     })()
 })()
