@@ -2091,7 +2091,7 @@
         let lastSelected = rojvStorage.addons[addonName].lastSelected
 
         const timersBoxWindow = new RojvWindow({
-            size: size ? size : { width: 100, height: 0 },
+            size: size ? size : { width: 100, height: 300 },
             draggable: true,
             windowType: WindowTypeEnum.Classic,
             managePosition: position ? position : null,
