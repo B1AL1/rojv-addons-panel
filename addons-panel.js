@@ -2036,8 +2036,8 @@
             document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
         }
 
-        const wizCount = rojvStorage.addons[addonName].wizCount ?? 0
-        const pickCount = rojvStorage.addons[addonName].pickCount ?? 0
+        let wizCount = rojvStorage.addons[addonName].wizCount ?? 0
+        let pickCount = rojvStorage.addons[addonName].pickCount ?? 0
 
         class DrawMineLabel {
             constructor(npc) {
@@ -2090,10 +2090,12 @@
             if (npc) {
                 if (npc.nick === pickaxeName) {
                     rojvStorage.addons[addonName].pickCount = pickCount + 1
+                    pickCount = pickCount + 1
                 } else if (npc.nick === wizardName) {
                     rojvStorage.addons[addonName].wizCount = wizCount + 1
+                    wizCount = wizCount + 1
                 }
-                mineHelperWindow.getContent().innerText = `Zamrożony czarodziej: ${rojvStorage.addons[addonName].wizCount}\nPorzucony kilof: ${rojvStorage.addons[addonName].pickCount}`
+                mineHelperWindow.getContent().innerText = `Zamrożony czarodziej: ${wizCount}\nPorzucony kilof: ${pickCount}`
                 document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
             }
         })
