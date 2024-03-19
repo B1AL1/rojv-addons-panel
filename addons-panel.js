@@ -642,7 +642,7 @@
         }
 
         createCloseButton() {
-            const closeButton = this.createControlElement('rojv-control rojv-control__close', '🇽', () => this.onClose(), this.menuRight)
+            const closeButton = this.createControlElement('rojv-control rojv-control__close', '✖', () => this.onClose(), this.menuRight)
             addTip(closeButton, 'Zamknij')
             return true
         }
