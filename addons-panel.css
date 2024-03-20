@@ -16,7 +16,7 @@
 	text-shadow: var(--rojv-text-shadow);
 }
 
-#rojv-addon-panel * {
+#rojv-addon-panel > * {
 	pointer-events: auto;
 }
 
