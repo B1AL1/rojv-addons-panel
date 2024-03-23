@@ -13,7 +13,7 @@
 
     let itemsMap = new Map()
 
-    document.querySelectorAll('.loot.col-md-3 a.itemborder img').forEach(function (item) {
+    document.querySelectorAll('.loot.col-md-3 a.itemborder img').forEach((item) => {
         let dataStats = item.getAttribute('data-stats')
         if (dataStats) {
             let statsArray = dataStats.split('||')
