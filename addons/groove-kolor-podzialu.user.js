@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Groove Kolor podziału
+// @name         Groove Kolor Podziału
 // @version      1.0
 // @description  Zmienia kolor podziału łupu, w zależności od rangi przedmiotu
 // @author       Rojvu
