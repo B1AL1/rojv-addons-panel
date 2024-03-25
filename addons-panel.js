@@ -1,83 +1,44 @@
 (async () => {
-    const waitFor = async (callback, retryMs, retryCount) => {
-        let timeout = retryCount
-        while (timeout > 0) {
-            if (callback()) {
-                return
-            }
-            await new Promise(resolve => setTimeout(resolve, retryMs))
-            timeout -= 1
+
+    const version = '20240326'
+
+    const newsObjects = [
+        {
+            date: '26.03.2024',
+            content: [
+                'Przebudowano strukturę projektu (optymalizacja wydajności, przejrzystość kodu).',
+                'Aktualizacja dodatków Mine Helper oraz Elite Designation pod względem wbudowanej funkcjonalności nametagów.',
+                'Dodano możliwość konfiguracji Mine Helper (możliwość wyłączenia labeli kilofów i czarodziejów).',
+                'Dodano scrollowanie kontentu do okienek dodatków bez zmiany wielkości okna.'
+            ]
+        },
+        {
+            date: '19.03.2024',
+            content: [
+                'Przebudowano wygląd okienek dodatków.',
+                'Zoptymalizowano ładowanie dodatków. Wymagane jest przeinstalowanie skryptu - link wyżej.',
+                'Dodano możliwość ręcznego odświeżenia tokenu cache obok zamknięcia okna panelu dodatków.'
+            ]
+        },
+        {
+            date: '14.03.2024',
+            content: [
+                'Nowy dodatek - Timers Box.',
+                'Dodano przycisk do włączania panelu dodatków dla REVO.',
+                'Przebudowano funkcjonalność przesuwania okienek dodatków.',
+                'Dodano funkcjonalność zmiany rozmiaru niektórych okienek.',
+                'Dodano możliwość resetowania pozycji okienka dodatku.',
+                'Dodano zapamiętywanie czy panel dodatków jest włączony, po odświeżeniu okna powinien on się od razu pojawić jęśli był wcześniej aktywny.'
+            ]
+        },
+        {
+            date: '11.03.2024',
+            content: [
+                'Nowy dodatek - Mine Helper.',
+                'Dodano opisy do dodatków po najechaniu na ich nazwy w panelu dodatków.'
+            ]
         }
-    }
-
-    const forInterface = (newInterface, oldInterface) => {
-        if (newInterface) {
-            return newInterface
-        } else if (oldInterface) {
-            return oldInterface
-        }
-    }
-
-    const forObject = (obj) => {
-        if (obj != null && typeof obj === 'object') {
-            return obj
-        }
-    }
-
-    const forArray = (array) => {
-        if (array.length > 0) {
-            return array
-        }
-    }
-
-    const addTip = (element, text) => {
-        $(element).tip(text)
-    }
-
-    const parseItemStats = (item) => {
-        if (typeof item.stat === 'string') {
-            item.parsedStats = item.stat.split(';').reduce((acc, curr) => {
-                const [key, value] = curr.split('=')
-                acc[key] = value
-                return acc
-            }, {})
-        } else {
-            item.parsedStats = item.stat
-        }
-    }
-
-    const addItemId = (item, id) => {
-        if (item) {
-            item.id = id
-        }
-    }
-
-    const isObject = (object) => {
-        return object != null && typeof object === 'object'
-    }
-
-    const deepEqual = (object1, object2) => {
-        const keys1 = Object.keys(object1)
-        const keys2 = Object.keys(object2)
-
-        if (keys1.length !== keys2.length) {
-            return false
-        }
-
-        for (const key of keys1) {
-            const val1 = object1[key]
-            const val2 = object2[key]
-            const areObjects = isObject(val1) && isObject(val2)
-            if (
-                areObjects && !deepEqual(val1, val2) ||
-                !areObjects && val1 !== val2
-            ) {
-                return false
-            }
-        }
-
-        return true
-    }
+    ]
 
     await waitFor(() => forInterface(window.Engine && window.Engine.communication, window.g && window.parseInput), 50, 300)
 
@@ -89,8 +50,6 @@
         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
 
-    const version = '20240319'
-
     const interfaceType = (() => {
         if (typeof Engine != 'undefined') {
             return 'new'
@@ -98,13 +57,6 @@
             return 'old'
         }
     })()
-
-    const checkAddonAvailability = (addon) => {
-        if (rojvStorage.addons[addon] && rojvStorage.addons[addon].active && (addons[addon].interface === interfaceType || addons[addon].interface === 'both')) {
-            return true
-        }
-        return false
-    }
 
     const WindowTypeEnum = {
         Classic: 'rojv-window',
@@ -188,7 +140,7 @@
             name: 'Mine Helper',
             description: 'Dodaje pływające napisy nad kilofami i czarodziejami na kopalni 300+ oraz zlicza ilośc ich podmiesień. Można dowolnie przesuwać licznik, jego pozycja zostanie zapisana.',
             interface: 'new',
-            settings: false,
+            settings: true,
             position: true,
             size: false,
             function: loadMineHelper
@@ -224,7 +176,11 @@
             },
             'heros-occupation-space': {
                 'border-color': '#ff8400'
-            }
+            },
+            'mine-helper': {
+                'show-pickaxe-label': true,
+                'show-wizard-label': true
+            },
         }
     }
 
@@ -300,209 +256,20 @@
                     description: 'Kolor ramki',
                     type: 'color'
                 }
+            },
+            'mine-helper': {
+                'show-pickaxe-label': {
+                    name: 'Pokaż tag kilofów',
+                    description: 'Pokaż tag kilofów',
+                    type: 'checkbox'
+                },
+                'show-wizard-label': {
+                    name: 'Pokaż tag czarodziejów',
+                    description: 'Pokaż tag czarodziejów',
+                    type: 'checkbox'
+                }
             }
         }
-    }
-
-    const createElement = (type, className, properties = {}, children = [], parent = null) => {
-        const element = document.createElement(type)
-        element.className = className
-        Object.assign(element, properties)
-        children.forEach(child => element.appendChild(child))
-        parent?.appendChild(element)
-
-        return element
-    }
-
-    const createControlElement = (className, innerText, clickEvent, parent) => {
-        let element = createElement('div', className, { innerText: innerText })
-        element.addEventListener('click', clickEvent)
-        if (parent) parent.appendChild(element)
-        return element
-    }
-
-    const resetAddonProperty = (addon, property, messageText) => {
-        rojvStorage.addons[addon][property] = null
-        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-        message(messageText)
-    }
-
-    const createAddonToggle = (addon, parent = null) => {
-        let toggle = createElement('label', 'rojv-checkbox__toggle')
-
-        let checkbox = createElement('input', 'rojv-checkbox__input', { type: 'checkbox', checked: rojvStorage.addons[addon]?.active }, [], toggle)
-
-        checkbox.addEventListener('change', () => {
-            rojvStorage.addons[addon] ? rojvStorage.addons[addon].active = checkbox.checked : rojvStorage.addons[addon] = { active: checkbox.checked }
-        })
-
-        createElement('span', 'rojv-checkbox__slider', {}, [], toggle)
-
-        if (parent) parent.appendChild(toggle)
-
-        return toggle
-    }
-
-
-    const generateAddonsList = (addons) => {
-        const addonsList = createElement('ul', 'rojv-addons__list')
-        for (let addon in addons) {
-            if (addons[addon].interface !== interfaceType && addons[addon].interface != 'both') continue
-
-            let li = createElement('li', 'rojv-addons__item', {}, [], addonsList)
-
-            createAddonToggle(addon, li)
-
-            let label = createElement('span', 'rojv-window__label', { 'innerText': addons[addon].name }, [], li)
-            addTip(label, addons[addon].description)
-
-            let controls = createElement('span', 'rojv-addons__controls', {}, [], li)
-
-            if (addons[addon].size && rojvStorage.addons[addon]?.active) {
-                let resetSize = createControlElement('rojv-control rojv-control__reset-size', '↔️', () => resetAddonProperty(addon, 'size', 'Rozmiar okna został zresetowany, odśwież stronę aby zobaczyć zmiany.'), controls)
-                addTip(resetSize, 'Przywróć domyślny rozmiar okna')
-            }
-
-            if (addons[addon].position && rojvStorage.addons[addon]?.active) {
-                let resetPosition = createControlElement('rojv-control rojv-control__reset-position', '↻', () => resetAddonProperty(addon, 'position', 'Pozycja została zresetowana, odśwież stronę aby zobaczyć zmiany.'), controls)
-                addTip(resetPosition, 'Przywróć domyślną pozycję okna')
-            }
-
-            if (addons[addon].settings && rojvStorage.addons[addon]?.active == true) {
-                let settings = createControlElement('rojv-control rojv-control__settings', '🛠', () => {
-                    let existingSettingsWindow = document.querySelector(`.${addon}`)
-                    if (existingSettingsWindow) {
-                        existingSettingsWindow.remove()
-                        return
-                    }
-
-                    const settingsWindow = new RojvWindow({
-                        header: {
-                            title: {
-                                text: addons[addon].name,
-                                fontSize: 16
-                            },
-                            closeable: true
-                        },
-                        draggable: true,
-                        windowClass: addon,
-                        footer: {
-                            buttons: [
-                                {
-                                    text: 'Przywróć domyślne',
-                                    onClick: () => {
-                                        rojvStorage.addons[addon].settings = defaultConfig.addons[addon]
-                                        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-                                        settingsWindow.getContainer().remove()
-                                    },
-                                    tip: 'Przywróć domyślne ustawienia dodatku',
-                                    messageText: 'Ustawienia dodatku zostały zresetowane, odśwież stronę aby zobaczyć zmiany.'
-                                }
-                            ]
-                        }
-                    })
-
-                    let settings = addonsSettingsList.addons[addon]
-                    let settingsValues = { ...defaultConfig.addons[addon], ...rojvStorage.addons[addon]?.settings }
-                    const settingsList = createElement('ul', 'rojv-addon-settings__list')
-                    for (let setting in settings) {
-                        let li = createElement('li', 'rojv-addon-settings__item', {}, [], settingsList)
-
-                        let input = createElement('input', 'rojv-window__input', {}, [], li)
-                        if (settings[setting].type == 'checkbox') {
-                            input.type = settings[setting].type
-                            input.checked = settingsValues[setting]
-                        } else if (settings[setting].type == 'array') {
-                            input.value = settingsValues[setting].join(', ')
-                        } else {
-                            input.type = settings[setting].type
-                            input.value = settingsValues[setting]
-                        }
-                        input.addEventListener('change', () => {
-                            let newValue
-                            if (settings[setting].type == 'checkbox') {
-                                newValue = input.checked
-                            } else {
-                                newValue = input.value
-                            }
-
-                            if (rojvStorage.addons[addon].settings) {
-                                rojvStorage.addons[addon].settings[setting] = newValue
-                            } else {
-                                rojvStorage.addons[addon].settings = { [setting]: newValue }
-                            }
-                            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-                        }
-                        )
-
-                        createElement('label', 'rojv-window__label', { 'innerText': settings[setting].name }, [], li)
-                    }
-                    settingsWindow.addContent(settingsList)
-                }, controls)
-                addTip(settings, 'Ustawienia')
-            }
-        }
-
-        return addonsList
-    }
-
-    const generateNews = () => {
-        const newsList = createElement('ul', 'rojv-news__list')
-
-        createElement('li', 'rojv-news__item', { 'innerText': 'Wersja: ' + version }, [], newsList)
-        const profile = createElement('li', 'rojv-news__item', {}, [], newsList)
-        createElement('span', 'rojv-window__label', { 'innerText': 'Profil: ' }, [], profile)
-        createElement('a', 'rojv-link', { 'href': 'https://www.margonem.pl/profile/view,4203975', 'target': '_blank', 'innerText': 'Rojvenos' }, [], profile)
-        createElement('li', 'rojv-news__item', { 'innerText': 'Jeśli widzisz tą wiadomość to przeinstaluj dodatki, link poniżej:' }, [], newsList)
-        createElement('a', 'rojv-link', { 'href': 'https://b1al1.github.io/rojv-addons-panel/rojv-addon-panel.user.js', 'target': '_blank', 'innerHTML': '<p style="color: red; font-size: 24px;">LINK</p>' }, [], newsList)
-
-        const newsObjects = [
-            {
-                date: '19.03.2024',
-                content: [
-                    'Przebudowano wygląd okienek dodatków.',
-                    'Zoptymalizowano ładowanie dodatków. Wymagane jest przeinstalowanie skryptu - link wyżej.',
-                    'Dodano możliwość ręcznego odświeżenia tokenu cache obok zamknięcia okna panelu dodatków.'
-                ]
-            },
-            {
-                date: '14.03.2024',
-                content: [
-                    'Nowy dodatek - Timers Box.',
-                    'Dodano przycisk do włączania panelu dodatków dla REVO.',
-                    'Przebudowano funkcjonalność przesuwania okienek dodatków.',
-                    'Dodano funkcjonalność zmiany rozmiaru niektórych okienek.',
-                    'Dodano możliwość resetowania pozycji okienka dodatku.',
-                    'Dodano zapamiętywanie czy panel dodatków jest włączony, po odświeżeniu okna powinien on się od razu pojawić jęśli był wcześniej aktywny.'
-                ]
-            },
-            {
-                date: '11.03.2024',
-                content: [
-                    'Nowy dodatek - Mine Helper.',
-                    'Dodano opisy do dodatków po najechaniu na ich nazwy w panelu dodatków.'
-                ]
-            }
-        ]
-
-        newsObjects.forEach((newsObject) => {
-            let news = createElement('li', 'rojv-news__item', {}, [], newsList)
-
-            let newsInnerList = createElement('ul', 'rojv-news__list', {}, [], news)
-            createElement('li', 'rojv-news__item', { 'innerHTML': `<b>${newsObject.date}</b>` }, [], newsInnerList)
-
-            newsObject.content.forEach((content) => {
-                createElement('li', 'rojv-news__item', { 'innerText': content }, [], newsInnerList)
-            })
-        })
-
-        return newsList
-    }
-
-    const generateSettings = () => {
-        const settingsList = createElement('ul', 'rojv-general_settings__list')
-        createElement('li', 'rojv-general_settings__item', { 'innerText': 'Może kiedyś coś tu będzie...' }, [], settingsList)
-        return settingsList
     }
 
     const mainWindowNavigationItems = {
@@ -518,24 +285,28 @@
             windowType = WindowTypeEnum.Classic,
             windowClass,
             size = { width: 300, height: 0 },
-            header,
+            header = {},
             parentElement = mainContainer,
             managePosition,
             draggable = false,
-            footer,
-            navigationItems,
-            resizable = false
+            footer = {},
+            navigation = { items: {}, paddingBottom: 0 },
+            resizable = false,
+            scrollable = false
         } = {}) {
             this.container = this.createElement('div', windowClass ? `${windowType} ${windowClass}` : `${windowType}`, { style: { width: `${size.width}px`, height: size.height > 0 ? `${size.height}px` : undefined } })
             this.header = this.createElement('div', 'rojv-window__header')
             this.menuLeft = this.createElement('span', 'rojv-window__menu-left')
             this.menuRight = this.createElement('span', 'rojv-window__menu-right')
             this.title = header?.title ? this.createTitle(header.title) : null
+            header?.paddingBottom && (this.header.style.paddingBottom = `${header.paddingBottom}px`)
 
             this.header.append(this.menuLeft, this.title || '', this.menuRight)
-            this.container.append(this.header, this.createContent(), this.createFooter())
+            this.container.append(this.header, this.createContent(), this.createFooter(footer))
             this.closeable = header?.closeable ? this.createCloseButton() : false
             parentElement.appendChild(this.container)
+
+            this.generateNavigation(navigation)
 
             if (draggable) {
                 let draggableElement = header?.title ? this.title : this.closeable ? this.header : this.content
@@ -568,7 +339,7 @@
                             }
                         }
                     }
-                )
+                ).css('position', 'absolute')
             }
 
             if (footer?.buttons) {
@@ -577,14 +348,21 @@
                 }
             }
 
-            if (navigationItems) this.generateNavigation(navigationItems)
-
             if (resizable) {
                 this.container.classList.add('rojv-window__resizable')
                 this.content.addEventListener('wheel', (event) => {
                     event.stopPropagation()
                 })
                 this.content.classList.add('rojv-window-content__resizable')
+            }
+
+            if (scrollable) {
+                this.content.classList.add('rojv-window-content__scrollable')
+                this.content.addEventListener('wheel', (event) => {
+                    event.stopPropagation()
+                })
+                this.content.style.paddingRight = '10px'
+                this.updateContentHeight()
             }
 
             if (managePosition) {
@@ -637,8 +415,8 @@
             return this.content = this.createElement('div', 'rojv-window__content')
         }
 
-        createFooter() {
-            return this.footer = this.createElement('div', 'rojv-window__footer')
+        createFooter({ paddingTop = 0 }) {
+            return this.footer = this.createElement('div', 'rojv-window__footer', { style: { paddingTop: `${paddingTop}px` } })
         }
 
         createCloseButton() {
@@ -740,35 +518,41 @@
             })
         }
 
-        generateNavigation(navigationItems) {
+        updateContentHeight() {
+            this.content.style.height = parseInt(this.container.style.height) - this.header.offsetHeight - this.footer.offsetHeight - (this.navigation ? this.navigation.offsetHeight : 0) + 'px'
+        }
+
+        generateNavigation({ items = {}, paddingBottom = 0 }) {
             this.navigation = this.createElement('div', 'rojv-addons__navigation')
+            this.navigation.style.paddingBottom = `${paddingBottom}px`
             this.container.insertBefore(this.navigation, this.content)
-            for (let item in navigationItems) {
-                let navigationItem = this.createElement('div', 'rojv-addons__navigation__item', navigationItems[item].name)
-                navigationItem.innerText = navigationItems[item].name
+            for (let item in items) {
+                let navigationItem = this.createElement('div', 'rojv-addons__navigation__item', items[item].name)
+                navigationItem.innerText = items[item].name
                 navigationItem.id = item
-                if (navigationItems[item].active) navigationItem.classList.add('rojv-addons__navigation__item--active')
+                if (items[item].active) navigationItem.classList.add('rojv-addons__navigation__item--active')
 
                 navigationItem.addEventListener('click', () => {
-                    if (navigationItems[item].active) return
-                    for (let item in navigationItems) {
-                        navigationItems[item].active = false
+                    if (items[item].active) return
+                    for (let item in items) {
+                        items[item].active = false
                         this.navigation.querySelectorAll(`.rojv-addons__navigation__item--active`).forEach(
                             (element) => element.classList.remove('rojv-addons__navigation__item--active')
                         )
                     }
 
-                    navigationItems[item].active = true
+                    items[item].active = true
                     navigationItem.classList.add('rojv-addons__navigation__item--active')
 
                     this.getContent().innerHTML = ''
-                    this.addContent(navigationItems[item].content)
+                    this.addContent(items[item].content)
 
-                    this.getFooter().style.display = navigationItems[item].isFooter ? 'flex' : 'none'
+                    this.getFooter().style.display = items[item].isFooter ? 'flex' : 'none'
+                    this.updateContentHeight()
                 })
                 this.navigation.appendChild(navigationItem)
 
-                if (navigationItems[item].active) this.addContent(navigationItems[item].content)
+                if (items[item].active) this.addContent(items[item].content)
             }
 
             return this.navigation
@@ -787,9 +571,265 @@
         }
     }
 
-    window.RojvAPI = {}
+    async function waitFor(callback, retryMs, retryCount) {
+        let timeout = retryCount
+        while (timeout > 0) {
+            if (callback()) {
+                return
+            }
+            await new Promise(resolve => setTimeout(resolve, retryMs))
+            timeout -= 1
+        }
+    }
 
-    const openRojvAddonPanelNews = () => {
+    function forInterface(newInterface, oldInterface) {
+        if (newInterface) {
+            return newInterface
+        } else if (oldInterface) {
+            return oldInterface
+        }
+    }
+
+    function forObject(obj) {
+        if (obj != null && typeof obj === 'object') {
+            return obj
+        }
+    }
+
+    function forArray(array) {
+        if (array.length > 0) {
+            return array
+        }
+    }
+
+    function addTip(element, text) {
+        $(element).tip(text)
+    }
+
+    function parseItemStats(item) {
+        if (typeof item.stat === 'string') {
+            item.parsedStats = item.stat.split(';').reduce((acc, curr) => {
+                const [key, value] = curr.split('=')
+                acc[key] = value
+                return acc
+            }, {})
+        } else {
+            item.parsedStats = item.stat
+        }
+    }
+
+    function addItemId(item, id) {
+        if (item) {
+            item.id = id
+        }
+    }
+
+    function isObject(object) {
+        return object != null && typeof object === 'object'
+    }
+
+    function deepEqual(object1, object2) {
+        const keys1 = Object.keys(object1)
+        const keys2 = Object.keys(object2)
+
+        if (keys1.length !== keys2.length) {
+            return false
+        }
+
+        for (const key of keys1) {
+            const val1 = object1[key]
+            const val2 = object2[key]
+            const areObjects = isObject(val1) && isObject(val2)
+            if (
+                areObjects && !deepEqual(val1, val2) ||
+                !areObjects && val1 !== val2
+            ) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    function checkAddonAvailability(addon) {
+        if (rojvStorage.addons[addon] && rojvStorage.addons[addon].active && (addons[addon].interface === interfaceType || addons[addon].interface === 'both')) {
+            return true
+        }
+        return false
+    }
+
+    function createElement(type, className, properties = {}, children = [], parent = null) {
+        const element = document.createElement(type)
+        element.className = className
+        Object.assign(element, properties)
+        children.forEach(child => element.appendChild(child))
+        parent?.appendChild(element)
+
+        return element
+    }
+
+    function createControlElement(className, innerText, clickEvent, parent) {
+        let element = createElement('div', className, { innerText: innerText })
+        element.addEventListener('click', clickEvent)
+        if (parent) parent.appendChild(element)
+        return element
+    }
+
+    function resetAddonProperty(addon, property, messageText) {
+        rojvStorage.addons[addon][property] = null
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        message(messageText)
+    }
+
+    function createAddonToggle(addon, parent = null) {
+        let toggle = createElement('label', 'rojv-checkbox__toggle')
+
+        let checkbox = createElement('input', 'rojv-checkbox__input', { type: 'checkbox', checked: rojvStorage.addons[addon]?.active }, [], toggle)
+
+        checkbox.addEventListener('change', () => {
+            rojvStorage.addons[addon] ? rojvStorage.addons[addon].active = checkbox.checked : rojvStorage.addons[addon] = { active: checkbox.checked }
+        })
+
+        createElement('span', 'rojv-checkbox__slider', {}, [], toggle)
+
+        if (parent) parent.appendChild(toggle)
+
+        return toggle
+    }
+
+    function generateAddonsList(addons) {
+        const addonsList = createElement('ul', 'rojv-addons__list')
+        for (let addon in addons) {
+            if (addons[addon].interface !== interfaceType && addons[addon].interface != 'both') continue
+
+            let li = createElement('li', 'rojv-addons__item', {}, [], addonsList)
+
+            createAddonToggle(addon, li)
+
+            let label = createElement('span', 'rojv-window__label', { 'innerText': addons[addon].name }, [], li)
+            addTip(label, addons[addon].description)
+
+            let controls = createElement('span', 'rojv-addons__controls', {}, [], li)
+
+            if (addons[addon].size && rojvStorage.addons[addon]?.active) {
+                let resetSize = createControlElement('rojv-control rojv-control__reset-size', '↔️', () => resetAddonProperty(addon, 'size', 'Rozmiar okna został zresetowany, odśwież stronę aby zobaczyć zmiany.'), controls)
+                addTip(resetSize, 'Przywróć domyślny rozmiar okna')
+            }
+
+            if (addons[addon].position && rojvStorage.addons[addon]?.active) {
+                let resetPosition = createControlElement('rojv-control rojv-control__reset-position', '↻', () => resetAddonProperty(addon, 'position', 'Pozycja została zresetowana, odśwież stronę aby zobaczyć zmiany.'), controls)
+                addTip(resetPosition, 'Przywróć domyślną pozycję okna')
+            }
+
+            if (addons[addon].settings && rojvStorage.addons[addon]?.active == true) {
+                let settings = createControlElement('rojv-control rojv-control__settings', '🛠', () => {
+                    let existingSettingsWindow = document.querySelector(`.${addon}`)
+                    if (existingSettingsWindow) {
+                        existingSettingsWindow.remove()
+                        return
+                    }
+
+                    const settingsWindow = new RojvWindow({
+                        header: {
+                            title: {
+                                text: addons[addon].name,
+                                fontSize: 16
+                            },
+                            closeable: true
+                        },
+                        draggable: true,
+                        windowClass: addon,
+                        footer: {
+                            buttons: [
+                                {
+                                    text: 'Przywróć domyślne',
+                                    onClick: () => {
+                                        rojvStorage.addons[addon].settings = defaultConfig.addons[addon]
+                                        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                                        settingsWindow.getContainer().remove()
+                                    },
+                                    tip: 'Przywróć domyślne ustawienia dodatku',
+                                    messageText: 'Ustawienia dodatku zostały zresetowane, odśwież stronę aby zobaczyć zmiany.'
+                                }
+                            ]
+                        }
+                    })
+
+                    let settings = addonsSettingsList.addons[addon]
+                    let settingsValues = { ...defaultConfig.addons[addon], ...rojvStorage.addons[addon]?.settings }
+                    const settingsList = createElement('ul', 'rojv-addon-settings__list')
+                    for (let setting in settings) {
+                        let li = createElement('li', 'rojv-addon-settings__item', {}, [], settingsList)
+
+                        let input = createElement('input', 'rojv-window__input', {}, [], li)
+                        if (settings[setting].type == 'checkbox') {
+                            input.type = settings[setting].type
+                            input.checked = settingsValues[setting]
+                        } else if (settings[setting].type == 'array') {
+                            input.value = settingsValues[setting].join(', ')
+                        } else {
+                            input.type = settings[setting].type
+                            input.value = settingsValues[setting]
+                        }
+                        input.addEventListener('change', () => {
+                            let newValue
+                            if (settings[setting].type == 'checkbox') {
+                                newValue = input.checked
+                            } else {
+                                newValue = input.value
+                            }
+
+                            if (rojvStorage.addons[addon].settings) {
+                                rojvStorage.addons[addon].settings[setting] = newValue
+                            } else {
+                                rojvStorage.addons[addon].settings = { [setting]: newValue }
+                            }
+                            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                        }
+                        )
+
+                        createElement('label', 'rojv-window__label', { 'innerText': settings[setting].name }, [], li)
+                    }
+                    settingsWindow.addContent(settingsList)
+                }, controls)
+                addTip(settings, 'Ustawienia')
+            }
+        }
+
+        return addonsList
+    }
+
+    function generateNews() {
+        const newsList = createElement('ul', 'rojv-news__list')
+
+        createElement('li', 'rojv-news__item', { 'innerText': 'Wersja: ' + version }, [], newsList)
+        const profile = createElement('li', 'rojv-news__item', {}, [], newsList)
+        createElement('span', 'rojv-window__label', { 'innerText': 'Profil: ' }, [], profile)
+        createElement('a', 'rojv-link', { 'href': 'https://www.margonem.pl/profile/view,4203975', 'target': '_blank', 'innerText': 'Rojvenos' }, [], profile)
+        createElement('li', 'rojv-news__item', { 'innerText': 'Jeśli widzisz tą wiadomość to przeinstaluj dodatki, link poniżej:' }, [], newsList)
+        createElement('a', 'rojv-link', { 'href': 'https://b1al1.github.io/rojv-addons-panel/rojv-addon-panel.user.js', 'target': '_blank', 'innerHTML': '<p style="color: red; font-size: 24px;">LINK</p>' }, [], newsList)
+
+        newsObjects.forEach((newsObject) => {
+            let news = createElement('li', 'rojv-news__item', {}, [], newsList)
+
+            let newsInnerList = createElement('ul', 'rojv-news__list', {}, [], news)
+            createElement('li', 'rojv-news__item', { 'innerHTML': `<b>${newsObject.date}</b>` }, [], newsInnerList)
+
+            newsObject.content.forEach((content) => {
+                createElement('li', 'rojv-news__item', { 'innerText': content }, [], newsInnerList)
+            })
+        })
+
+        return newsList
+    }
+
+    function generateSettings() {
+        const settingsList = createElement('ul', 'rojv-general_settings__list')
+        createElement('li', 'rojv-general_settings__item', { 'innerText': 'Może kiedyś coś tu będzie...' }, [], settingsList)
+        return settingsList
+    }
+
+    function openRojvAddonPanelNews() {
         const newsWindow = new RojvWindow({
             size: { width: 600, height: 300 },
             header: {
@@ -798,22 +838,94 @@
                     text: 'Rojv Addon Menu - Aktualności',
                     fontSize: 20
                 },
+                paddingBottom: 10
             },
             draggable: true,
+            scrollable: true,
             windowType: WindowTypeEnum.Classic
         })
 
-        const newsList = generateNews()
+        newsWindow.addContent(generateNews())
+    }
 
-        newsWindow.getContent().classList.add('rojv-window-content__resizable')
-        newsWindow.getContent().style.height = parseInt(newsWindow.getContainer().style.height) - newsWindow.getHeader().offsetHeight - newsWindow.getFooter().offsetHeight + 'px'
-        newsWindow.getContent().style.paddingRight = '10px'
-        newsWindow.getContent().addEventListener('wheel', (event) => {
-            event.stopPropagation()
+    function openRojvAddonPanel() {
+        const mainWindow = new RojvWindow({
+            size: { width: 900, height: 350 },
+            header: {
+                closeable: true,
+                title: {
+                    text: 'Rojv Addon Menu',
+                    fontSize: 20
+                },
+                paddingBottom: 20
+            },
+            draggable: true,
+            windowType: WindowTypeEnum.Classic,
+            footer: {
+                buttons: [
+                    {
+                        text: 'Zapisz',
+                        onClick: () => {
+                            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                        },
+                        tip: 'Zapisz ustawienia dodatków',
+                        messageText: 'Zapisano ustawienia, odśwież stronę aby zobaczyć zmiany.'
+                    },
+                    {
+                        text: 'Odśwież',
+                        onClick: () => {
+                            location.reload()
+                        },
+                        tip: 'Odśwież stronę'
+                    }
+                ],
+                paddingTop: 10
+            },
+            navigation: { items: mainWindowNavigationItems, paddingBottom: 10 },
+            scrollable: true
         })
 
-        newsWindow.addContent(newsList)
+        mainWindow.getContainer().id = 'rojv-addon-panel-window'
+        let refreshToken = createControlElement('rojv-control rojv-control__refresh-token', '↻', () => {
+            document.rojvPanel.GM_setValue('rojv_panel_cache_token', null)
+            location.reload()
+        })
+        addTip(refreshToken, 'Odśwież token cache')
+        mainWindow.getMenuRight().prepend(refreshToken)
+
+        rojvStorage.isAddonPanelOpen = true
+        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
     }
+
+    function createRojvAddonPanelButtonNI() {
+        if (document.querySelector('.rojv-addons-panel-selction')) return
+        const settings = document.querySelector('.settings-window .hero-options-config .scroll-pane')
+        if (!settings) return
+        const rojvAddonPanel = document.createElement('div')
+        rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
+
+        const header = document.createElement('h2')
+        header.classList.add('settings-addons')
+        header.innerHTML = '<span>Rojv Addons Panel</span>'
+        rojvAddonPanel.appendChild(header)
+
+        const list = document.createElement('ul')
+        list.classList.add('hero-options')
+        list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
+        list.addEventListener('click', () => {
+            if (document.querySelector('#rojv-addon-panel-window')) {
+                document.querySelectorAll('#rojv-addon-panel-window').forEach((element) => element.remove())
+                rojvStorage.isAddonPanelOpen = false
+                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+                return
+            }
+            openRojvAddonPanel()
+        })
+        rojvAddonPanel.appendChild(list)
+        settings.appendChild(rojvAddonPanel)
+    }
+
+    window.RojvAPI = {}
 
     if (rojvStorage?.version != version) {
         rojvStorage.version = version
@@ -851,7 +963,7 @@
 
     fetchRevo()
 
-    const actionBefore = (obj, key, clb, exArgs = []) => {
+    function actionBefore(obj, key, clb, exArgs = []) {
         const _method = obj[key]
 
         obj[key] = function (...args) {
@@ -863,7 +975,7 @@
         }
     }
 
-    const actionAfter = (obj, key, clb, exArgs = []) => {
+    function actionAfter(obj, key, clb, exArgs = []) {
         const _method = obj[key]
 
         obj[key] = function (...args) {
@@ -963,85 +1075,11 @@
 
     const initRojvAddonPanelButtonNI = (async () => {
         if (interfaceType === 'old') return
-        await waitFor(() => forObject(window.Engine.settings), 50, 3000)
+        await waitFor(() => forObject(Engine.settings), 50, 3000)
         actionAfter(Engine.settings, 'toggle', () => {
             createRojvAddonPanelButtonNI()
         })
     })()
-
-    const createRojvAddonPanelButtonNI = () => {
-        if (document.querySelector('.rojv-addons-panel-selction')) return
-        const settings = document.querySelector('.settings-window .hero-options-config .scroll-pane')
-        if (!settings) return
-        const rojvAddonPanel = document.createElement('div')
-        rojvAddonPanel.classList.add('seccond-c', 'rojv-addons-panel-selction')
-
-        const header = document.createElement('h2')
-        header.classList.add('settings-addons')
-        header.innerHTML = '<span>Rojv Addons Panel</span>'
-        rojvAddonPanel.appendChild(header)
-
-        const list = document.createElement('ul')
-        list.classList.add('hero-options')
-        list.innerHTML = '<li><span class="label">Otwórz ustawienia</span></li>'
-        list.addEventListener('click', () => {
-            if (document.querySelector('#rojv-addon-panel-window')) {
-                document.querySelectorAll('#rojv-addon-panel-window').forEach((element) => element.remove())
-                rojvStorage.isAddonPanelOpen = false
-                document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-                return
-            }
-            openRojvAddonPanel()
-        })
-        rojvAddonPanel.appendChild(list)
-        settings.appendChild(rojvAddonPanel)
-    }
-
-    const openRojvAddonPanel = () => {
-        const mainWindow = new RojvWindow({
-            size: { width: 900, height: 0 },
-            header: {
-                closeable: true,
-                title: {
-                    text: 'Rojv Addon Menu',
-                    fontSize: 20
-                },
-            },
-            draggable: true,
-            windowType: WindowTypeEnum.Classic,
-            footer: {
-                buttons: [
-                    {
-                        text: 'Zapisz',
-                        onClick: () => {
-                            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-                        },
-                        tip: 'Zapisz ustawienia dodatków',
-                        messageText: 'Zapisano ustawienia, odśwież stronę aby zobaczyć zmiany.'
-                    },
-                    {
-                        text: 'Odśwież',
-                        onClick: () => {
-                            location.reload()
-                        },
-                        tip: 'Odśwież stronę'
-                    }
-                ]
-            },
-            navigationItems: mainWindowNavigationItems
-        })
-
-        mainWindow.getContainer().id = 'rojv-addon-panel-window'
-        let refreshToken = createControlElement('rojv-control rojv-control__refresh-token', '↻', () => {
-            document.rojvPanel.GM_setValue('rojv_panel_cache_token', null)
-            location.reload()
-        })
-        addTip(refreshToken, 'Odśwież token cache')
-        mainWindow.getMenuRight().prepend(refreshToken)
-
-        rojvStorage.isAddonPanelOpen = true
-        document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
-    }
 
     window.RojvAPI.openRojvAddonPanel = openRojvAddonPanel
 
@@ -1427,11 +1465,7 @@
                     const items = event.item ? event.item : event.item_tpl
                     if (items) {
                         for (let item in items) {
-                            items[item].parsedStats = typeof items[item].stat == 'string' ? items[item].parsedStats = items[item].stat.split(';').reduce((acc, curr) => {
-                                const [key, value] = curr.split('=')
-                                acc[key] = value
-                                return acc
-                            }, {}) : items[item].stat
+                            parseItemStats(items[item])
 
                             if (items[item].parsedStats?.rarity) {
                                 let rarity = items[item].parsedStats.rarity
@@ -1716,6 +1750,7 @@
         const amplitude = 4
         const e2GrpSet = new Set()
         const npcsValueMap = new Map()
+        const handHeldMiniMapController = Engine.miniMapController.handHeldMiniMapController
 
         class DrawE2Label {
             constructor(npc) {
@@ -1729,7 +1764,17 @@
                     const [offsetX, offsetY] = Engine.map.offset
                     const [left, top] = npc.collider?.box || [0, 0]
                     const posLeft = left - offsetX
-                    const posTop = top - offsetY
+                    let posTop = top - offsetY
+                    const kind = npc.getKind()
+                    const fontSize = parseInt(handHeldMiniMapController.getFontSizeDataDrawer())
+                    const drawNick = handHeldMiniMapController.getDataDrawerNickOfKindByName(kind)
+                    const drawProfAndLevel = handHeldMiniMapController.getDataDrawerProfAndLevelOfKindByName(kind)
+
+                    if (!drawNick && drawProfAndLevel || drawNick && !drawProfAndLevel) {
+                        posTop -= fontSize + 10
+                    } else if (drawNick && drawProfAndLevel) {
+                        posTop -= fontSize * 2 + 10
+                    }
 
                     let npcValue = npcsValueMap.get(id) ?? { positionY: 0, velocityY: 0.1 }
                     let { positionY, velocityY } = npcValue
@@ -1743,7 +1788,7 @@
 
                     ctx.drawImage(e2LabelImage, posLeft + fw / 2 - 15, posTop - 24 + positionY, 30, 20)
                 }
-                this.getOrder = () => 100
+                this.getOrder = () => 20000
             }
         }
         const getDrawableListE2Label = (npcs) => Object.values(npcs).map(npc => new DrawE2Label(npc))
@@ -1986,6 +2031,8 @@
         let addonName = 'mine-helper'
         const position = rojvStorage.addons[addonName].position
 
+        let addonsSettings = { ...defaultConfig.addons[addonName], ...rojvStorage.addons[addonName].settings }
+
         const mineHelperWindow = new RojvWindow({
             size: { width: 50, height: 0 },
             draggable: true,
@@ -2004,16 +2051,10 @@
 
         addTip(mineHelperWindow.getContainer(), 'Mine Helper')
 
-        const wizardLabelImage = new Image()
-        const pickaxeLabelImage = new Image()
-        wizardLabelImage.src = 'https://i.imgur.com/3OqBGiC.png'
-        pickaxeLabelImage.src = 'https://i.imgur.com/tmMbvRV.png'
+        const showPickaxes = addonsSettings['show-pickaxe-label']
+        const showWizards = addonsSettings['show-wizard-label']
 
-        const amplitude = 4
         const mineNpcsValueMap = new Map()
-
-        const pickaxeName = 'Porzucony kilof'
-        const wizardName = 'Zamrożony czarodziej'
 
         const lastMineDate = new Date(rojvStorage.addons[addonName].lastMineDate ?? 0)
         const todayDate = new Date()
@@ -2028,10 +2069,25 @@
         let wizCount = rojvStorage.addons[addonName].wizCount ?? 0
         let pickCount = rojvStorage.addons[addonName].pickCount ?? 0
 
+        const pickaxeName = 'Porzucony kilof'
+        const wizardName = 'Zamrożony czarodziej'
+
+        const wizardLabelImage = new Image()
+        const pickaxeLabelImage = new Image()
+        wizardLabelImage.src = 'https://i.imgur.com/3OqBGiC.png'
+        pickaxeLabelImage.src = 'https://i.imgur.com/tmMbvRV.png'
+
+        const amplitude = 4
+
+        const handHeldMiniMapController = Engine.miniMapController.handHeldMiniMapController
+
         class DrawMineLabel {
             constructor(npc) {
-                const { d: { id, nick }, rx, ry, fw } = npc
+                const { d: { id, nick, type }, rx, ry, fw } = npc
                 if (nick !== pickaxeName && nick !== wizardName) return
+
+                if (nick === pickaxeName && !showPickaxes) return
+                if (nick === wizardName && !showWizards) return
 
                 this.rx = rx
                 this.ry = ry
@@ -2040,7 +2096,14 @@
                     const [offsetX, offsetY] = Engine.map.offset
                     const [left, top] = npc.collider?.box || [0, 0]
                     const posLeft = left - offsetX
-                    const posTop = top - offsetY
+                    let posTop = top - offsetY
+                    const kind = npc.getKind()
+                    const fontSize = parseInt(Engine.miniMapController.handHeldMiniMapController.getFontSizeDataDrawer())
+                    const drawNick = handHeldMiniMapController.getDataDrawerNickOfKindByName(kind)
+
+                    if (drawNick && type != 5) {
+                        posTop -= fontSize + 10
+                    }
 
                     let npcValue = mineNpcsValueMap.get(id) ?? { positionY: 0, velocityY: 0.1 }
                     let { positionY, velocityY } = npcValue
@@ -2126,20 +2189,13 @@
                 }
             })
 
-            const changeContentHeight = () => {
-                timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight + 'px'
-                if (timersBoxWindow.getNavigation()) {
-                    timersBoxWindow.getContent().style.height = parseInt(timersBoxWindow.getContainer().style.height) - timersBoxWindow.getHeader().offsetHeight - timersBoxWindow.getNavigation().offsetHeight + 'px'
-                }
-            }
-
             timersBoxWindow.onChangesPosition(() => {
                 rojvStorage.addons[addonName].position = timersBoxWindow.getPosition()
                 document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
             })
 
             timersBoxWindow.onChangesSize(() => {
-                changeContentHeight()
+                timersBoxWindow.updateContentHeight()
                 rojvStorage.addons[addonName].size = timersBoxWindow.getSize()
                 document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
             })
@@ -2182,8 +2238,7 @@
                         document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
                     }
                 })
-                let navigation = timersBoxWindow.generateNavigation(navigationItems)
-                navigation.style.marginTop = '0'
+                timersBoxWindow.generateNavigation({ items: navigationItems })
                 let navigationItemsList = timersBoxWindow.getNavigationItems()
                 navigationItemsList.forEach((item) => {
                     let itemId = item.getAttribute('id')
