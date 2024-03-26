@@ -1,8 +1,14 @@
 (async () => {
 
-    const version = '20240326'
+    const version = '20240327'
 
     const newsObjects = [
+        {
+            date: '27.03.2024',
+            content: [
+                'Nowy dodatek - Inventory Search.'
+            ]
+        },
         {
             date: '26.03.2024',
             content: [
@@ -153,6 +159,15 @@
             position: true,
             size: true,
             function: loadTimersBox
+        },
+        'inventory-search': {
+            name: 'Inventory Search',
+            description: 'Dodaje możliwość wyszukiwania przedmiotów w ekwipunku po nazwie, opisie i innych.',
+            interface: 'new',
+            settings: false,
+            position: true,
+            size: false,
+            function: loadInventorySearch
         },
     }
 
@@ -386,6 +401,13 @@
         createControlElement(className, innerText, clickEvent, parent) {
             const element = createElement('div', className, { innerText: innerText })
             element.addEventListener('click', clickEvent)
+            if (parent) parent.appendChild(element)
+            return element
+        }
+
+        createInputElement(className, properties = {}, events = [], parent) {
+            const element = createElement('input', className, properties)
+            events.forEach(event => element.addEventListener(event.type, event.callback))
             if (parent) parent.appendChild(element)
             return element
         }
@@ -661,11 +683,28 @@
     function createElement(type, className, properties = {}, children = [], parent = null) {
         const element = document.createElement(type)
         element.className = className
-        Object.assign(element, properties)
+        checkObjectAndAssign(properties, element)
         children.forEach(child => element.appendChild(child))
         parent?.appendChild(element)
 
         return element
+    }
+
+    function checkObjectAndAssign(obj, element) {
+        if (typeof obj === 'object') {
+            for (let prop in obj) {
+                if (obj.hasOwnProperty(prop)) {
+                    if (typeof obj[prop] === 'object') {
+                        if (!element[prop]) {
+                            element[prop] = {}
+                        }
+                        checkObjectAndAssign(obj[prop], element[prop])
+                    } else {
+                        element[prop] = obj[prop]
+                    }
+                }
+            }
+        }
     }
 
     function createControlElement(className, innerText, clickEvent, parent) {
@@ -1226,7 +1265,7 @@
         const style = document.createElement('style')
         style.innerHTML = `
             [enhancement-upgrade-lvl] {
-                position: relative;
+                position: absolute;
                 width: 100%;
                 height: 100%;
             }
@@ -2257,6 +2296,174 @@
         fetchTimers()
     }
 
+    function loadInventorySearch() {
+        let addonName = 'inventory-search'
+
+        const position = rojvStorage.addons[addonName].position
+
+        const inventorySearchWindow = new RojvWindow({
+            size: { width: 235, height: 0 },
+            header: {
+                title: {
+                    text: 'Inventory Search',
+                    fontSize: '8px'
+                },
+                paddingBottom: 5
+            },
+            draggable: true,
+            windowType: WindowTypeEnum.Classic,
+            managePosition: position ? position : null,
+            footer: {
+                paddingTop: 5
+            }
+        })
+
+        inventorySearchWindow.getContainer().style.padding = '5px'
+
+        let searchText = ''
+        let highlightedElements = []
+
+        let inputElement = inventorySearchWindow.createInputElement('rojv-input__text', { placeholder: 'Wyszukaj...', type: 'text' }, [{ type: 'input', callback: handleInputChange }])
+        let clearControl = inventorySearchWindow.createControlElement('rojv-control rojv-control__close', '✖', clearSearch)
+        let foundItemsCountElement = createElement('div', 'rojv-found-items-count', {
+            style: {
+                fontSize: '10px',
+                position: 'absolute',
+                left: '5px',
+                top: '6px'
+            },
+            textContent: 'Items: 0'
+        })
+        inventorySearchWindow.addContent(foundItemsCountElement)
+        inventorySearchWindow.addContent(inputElement)
+        inventorySearchWindow.addContent(clearControl)
+
+        inventorySearchWindow.getContent().style.display = 'flex'
+        inventorySearchWindow.getContent().style.flexDirection = 'column'
+
+        clearControl.style.position = 'absolute'
+        clearControl.style.right = '10px'
+        clearControl.style.top = '31px'
+
+        inventorySearchWindow.onChangesPosition(() => {
+            rojvStorage.addons[addonName].position = inventorySearchWindow.getPosition()
+            document.rojvPanel.GM_setValue('rojv-storage', rojvStorage)
+        })
+
+        addTip(inventorySearchWindow.getHeader(), 'Wyszukiwarka w ekwipunku')
+
+        const buttons = ['Ulepa', 'Mix', 'Tp', 'Ucieczka']
+        buttons.forEach(button => {
+            inventorySearchWindow.addFooter(inventorySearchWindow.createButton({
+                text: button,
+                onClick: () => handleSearchButtonClick(button.toLowerCase())
+            }))
+        })
+
+        let highlightDiv = createElement('div', 'findhighlight', {
+            style: {
+                width: '32px',
+                height: '32px',
+                position: 'absolute',
+                background: '#000',
+                opacity: '.7',
+                zIndex: '2',
+                pointerEvents: 'none'
+            }
+        })
+
+        function highlightMismatchedElements(items) {
+            let foundItemsCount = 0
+
+            const lowerCaseSearchText = searchText.toLowerCase()
+
+            items.forEach(item => {
+                const itemName = item.name.toLowerCase()
+                parseItemStats(item)
+                const itemEnhancementPoints = item.enhancementPoints
+                const itemDescription = item?.parsedStats?.opis?.toLowerCase()
+                const itemDiv = document.querySelector(`.inventory_wrapper .inventory-grid-bg .item-id-${item.id}`)
+
+                if (itemDiv) {
+                    let found = false
+                    if (lowerCaseSearchText === 'ulepa' && (parseInt(itemEnhancementPoints) > 1 || 'enhancement_add_point' in item.parsedStats)) {
+                        found = true
+                        foundItemsCount++
+                    } else if (lowerCaseSearchText === 'mix' && !('fightperheal' in item.parsedStats) && ('fullheal' in item.parsedStats || 'leczy' in item.parsedStats || 'perheal' in item.parsedStats)) {
+                        found = true
+                        foundItemsCount++
+                    } else if (lowerCaseSearchText === 'tp' && (item?.parsedStats.hasOwnProperty('teleport') || item?.parsedStats.hasOwnProperty('custom_teleport'))) {
+                        found = true
+                        foundItemsCount++
+                    } else if (lowerCaseSearchText === 'ucieczka' && item?.parsedStats?.action === 'flee') {
+                        found = true
+                        foundItemsCount++
+                    } else if (itemName.includes(lowerCaseSearchText) || itemDescription?.includes(lowerCaseSearchText)) {
+                        found = true
+                        foundItemsCount++
+                    }
+
+                    let highlight = itemDiv.querySelector('.findhighlight')
+                    if (highlight && found) {
+                        highlight.remove()
+                    } else if (!highlight && !found) {
+                        highlight = itemDiv.appendChild(highlightDiv.cloneNode(true))
+                        highlightedElements.push(highlight)
+                    }
+                }
+            })
+
+            updateFoundItemsCountElement(foundItemsCount)
+        }
+
+        function handleInputChange(event) {
+            searchText = event.target.value.trim()
+            if (searchText === '') {
+                clearHighlights()
+                updateFoundItemsCountElement(0)
+            } else {
+                const items = Engine.items.fetchLocationItems('g')
+                highlightMismatchedElements(items)
+            }
+        }
+
+        function clearSearch() {
+            searchText = ''
+            inputElement.value = ''
+            clearHighlights()
+            updateFoundItemsCountElement(0)
+        }
+
+        function handleSearchButtonClick(keyword) {
+            if (searchText === keyword) {
+                searchText = ''
+                inputElement.value = ''
+                clearHighlights()
+                updateFoundItemsCountElement(0)
+            } else {
+                searchText = keyword
+                inputElement.value = keyword
+                const items = Engine.items.fetchLocationItems('g')
+                highlightMismatchedElements(items)
+            }
+        }
+
+        function clearHighlights() {
+            highlightedElements.forEach(element => {
+                element.remove()
+            })
+            highlightedElements = []
+        }
+
+        function updateFoundItemsCountElement(foundItemsCount) {
+            if (foundItemsCount > 0) {
+                foundItemsCountElement.textContent = `Items: ${foundItemsCount}`
+            } else {
+                foundItemsCountElement.textContent = 'Items: 0'
+            }
+        }
+    }
+
     let promisesAddons = []
     for (let addon in rojvStorage.addons) {
         if (checkAddonAvailability(addon)) {
@@ -2265,5 +2472,4 @@
     }
 
     Promise.all(promisesAddons)
-
 })()
