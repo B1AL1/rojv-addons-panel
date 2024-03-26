@@ -2251,7 +2251,7 @@
                     })
                 })
             }
-            changeContentHeight()
+            timersBoxWindow.updateContentHeight()
         }
 
         fetchTimers()
